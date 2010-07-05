@@ -25,7 +25,7 @@
 
 #define SERVER_GFX_PORT 4711 //Port on botserver for gfx
 #define SERVER_BOT_PORT 4712 //Port on botserver for bots
-#define CLIENT_PORT 4713 //Port that bots will connect to localy
+#define CLIENT_PORT 4710 //Port that bots will connect to localy
 #define SERVER_HOSTNAME "localhost"
 
 struct thread_data {
@@ -57,12 +57,16 @@ int main(int argc,char *argv[])
 {
 	struct thread_data td;
 	td.mode=MODE_GFX;
-	td.ssock=client_sock=init_server_connection(&td);
+	td.ssock=init_server_connection(&td);
+	td.csock=0;
+	client_sock=td.ssock;
 	if(td.ssock==0) 
 		exit(1);
 
 	printf("GFX socket: %i\n",client_sock);
-	pthread_create(&client_t,NULL,init_server_communication,&td);
+	void * data = malloc(sizeof(td));
+	memcpy(data,&td,sizeof(td));
+	pthread_create(&client_t,NULL,init_server_communication,data);
 	//Make sure the sockets is closed on exit
 	atexit(&close_socket);
 
@@ -148,7 +152,9 @@ void writeln(int sock,void * data,int len) {
 void * init_server_communication(void * data) {
 	char buffer[50];
 	int len;
-	struct thread_data * td=  (struct thread_data *)data;
+	struct thread_data * td=malloc(sizeof(struct thread_data));
+	memcpy(td,data,sizeof(struct thread_data));
+	free(data);
 
 	strcpy(buffer,PROT_VERSION);
 	len=strlen(buffer);
@@ -159,6 +165,7 @@ void * init_server_communication(void * data) {
 	writeln(td->ssock,buffer,strlen(buffer));
 	
 	read_server(td);
+	free(td);
 }
 
 
@@ -356,6 +363,12 @@ parsing_done:
 
 	printf("Disconnected from server (socket: %i)\n",ssock);
 	free(buffer);
+	close(ssock);
+	if(ssock==server_sock)
+		server_sock=0;
+
+	if(td->csock!=0)
+		close(csock);
 }
 
 void * read_client(void * data) {
@@ -379,6 +392,8 @@ void * read_client(void * data) {
 	}
 
 	printf("Disconnected from server (socket: %i)\n",ssock);
+	write(ssock,"close",sizeof("close"));
+	close(csock);
 	free(buffer);
 }
 
@@ -433,7 +448,9 @@ void * init_server()
 				 continue;
 		  }
 		pthread_t tmp_client_t;
-		pthread_create(&tmp_client_t,&thread_attr,new_client_thread,(void *)&newserver_sock);
+		void * data=malloc(sizeof(newserver_sock));
+		memcpy(data,&newserver_sock,sizeof(newserver_sock));
+		pthread_create(&tmp_client_t,&thread_attr,new_client_thread,data);
 	}
 }
 
@@ -444,10 +461,13 @@ void close_socket() {
 }
 
 void *new_client_thread(void *data) {
-	int *sock=(int *)data;
+	int sock;
+	memcpy(&sock,data,sizeof(int));
+	free(data);
+
 	struct thread_data td;
 	td.mode=MODE_BOT;
-	td.csock=*sock;
+	td.csock=sock;
 	td.ssock=init_server_connection(&td);
 	if(td.ssock==0) {
 		fprintf(stderr,"Couldn't connect to botserver\n");
