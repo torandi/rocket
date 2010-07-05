@@ -2,6 +2,8 @@
 
 require 'socket'
 require 'map'
+require 'rkt_display'
+require 'rkt_robot'
 
 class RubyServer
 
@@ -22,79 +24,97 @@ class RubyServer
 
       Thread.start(@server.accept) do |client|
         log "New connection"
+        state = 0
+        hash = ""
+        obj = nil
 
         loop do
+        
+        	puts "read state[#{state}]"
+        	line = read(client)
+        
+        	if line == "close"
+        		client.close
+        		break
+        	end
 
-          if not @authed_clients.include?(client.object_id)
-            if check_version client
-              @authed_clients.push(client.object_id)
-              client.puts "cversion yes"
-            else
-              client.puts "cversion no"
-              client.close
-            end
-          end
+					if state == 0
 
-          # Get line from client
-          line = client.gets.chop
-          log "Data: '#{line}'"
+						# Kollar att klienten ansluter med en accepterad version
+		        if check_version line
+		          state = 1
+		          client.puts "cversion yes"
+		          next
+		        else
+		          client.puts "cversion no"
+		          client.close
+		          break
+		        end
 
-          # Lägger klienten i @display_sockets
-          # om den inte redan ligger där.
-          if line == "mode display" and not @display_sockets.include?(client.object_id)
-            @display_sockets.push(client.object_id)
-            client.puts "mode ok"
-            log "Set display"
-          end
+					elsif state == 1
+					
+						# auth
+						if line == "auth"
+							hash = (rand(8999)+1000).to_s
+							client.puts "auth " + hash
+							state = 2
+							next
+						else
+							client.puts "invalid protocol, expected auth"
+							client.close
+							break
+						end
 
-          # Lägger klienten i @bot_sockets
-          # om den inte redan ligger där.
-          if line == "mode bot" and not @bot_sockets.include?(client.object_id)
-            @bot_sockets.push(client.object_id)
-            client.puts "mode ok"
-            log "Set bot"
-          end
-
-          # Anroppar rätt metod beroende som det
-          # är en robot eller display som ansluter.
-          if @bot_sockets.include?(client.object_id)
-            bot client, line
-          elsif @display_sockets.include?(client.object_id)
-            display client, line
-          else
-            log "error, no mode given"
-            client.puts "error, no mode given"
-            client.close
-          end
-        end
+					elsif state == 2
+					
+						auth_sum = (hash.to_i * hash[1,1].to_i ) + ( hash[3,1].to_i * 5)
+						puts "auth_sum[#{auth_sum}] hash[#{hash}]"
+						
+						if true || line.split[1].to_i == auth_sum
+							client.puts "auth ok"
+							state = 3
+							next
+						else
+							client.puts "auth no"
+						end
+					
+					elsif state == 3
+					
+						if line == "mode display"
+							puts "mode display"
+							obj = RktDisplay.new client
+						elsif line == "mode bot"
+							puts "mode robot"
+							obj = RktRobot.new client
+						else
+							client.puts "invalid protocol, expected mode <str>"
+							client.close
+							break
+						end
+						
+						# TODO: Tråden fortsätter och skicka data även när anslutingen är stängd
+						Thread.new { obj.run line }
+						break # break loop
+						
+					end
+					
+				end
       end
     end
   end
 
-  def display client, line
-
-    if line == "close"
-      client.close # todo: kolla så den verkligen stänger tråden
-    end
-
-  end
-
-  def bot client, line
-
-    if line == "close"
-      client.close # todo: kolla så den verkligen stänger tråden
-    end
-
-  end
-
   private
 
-  def check_version client
-    s = client.gets.chop.split
+  def check_version line
+    s = line.split
     if s[0] == "cversion"
       return true if @accepted_versions.include?(s[1].to_f)
     end
     false
+  end
+  
+  def read client
+	 	client.gets.chop
   end
   
   def log str
@@ -105,5 +125,3 @@ end
 
 server = RubyServer.new
 server.open_server
-
-world = RocketWorld.new 100, 100
