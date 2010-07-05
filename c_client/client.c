@@ -26,7 +26,8 @@
 #define SERVER_GFX_PORT 4711 //Port on botserver for gfx
 #define SERVER_BOT_PORT 4712 //Port on botserver for bots
 #define CLIENT_PORT 4710 //Port that bots will connect to localy
-#define SERVER_HOSTNAME "localhost"
+#define SERVER_HOSTNAME "192.168.0.5"
+//#define SERVER_HOSTNAME "localhost"
 
 struct thread_data {
 	int mode;
@@ -138,10 +139,10 @@ void write(int sock,void * data,int len) {
 
 /* Sends data through socket with newline*/
 void writeln(int sock,void * data,int len) {
-	char * senddata = malloc(len+1);
-	memcpy(senddata,data,len);
-	senddata[len]=0xA; //newline
-	int n = send(sock,senddata,len+1,MSG_DONTROUTE);
+	char * senddata = malloc(len);
+	memcpy(senddata,data,len-1);
+	senddata[len-1]=0xA; //newline
+	int n = send(sock,senddata,len,MSG_DONTROUTE);
 	free(senddata);	
 
 	if(n<0) {
@@ -162,7 +163,7 @@ void * init_server_communication(void * data) {
 	buffer[len++]=0x20; //space
 	strcpy(buffer+len,VERSION);
 
-	writeln(td->ssock,buffer,strlen(buffer));
+	writeln(td->ssock,buffer,strlen(buffer)+1);
 	
 	read_server(td);
 	free(td);
@@ -200,7 +201,7 @@ void read_server(struct thread_data *td) {
 		data=buffer;
 		*next_newline=0;
 
-		printf("Got data: %s\n",data);
+		printf("Got data: [%s]\n",data);
 
 
 		//cversion
