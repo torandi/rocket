@@ -32,6 +32,7 @@ class RubyServer
         
         	puts "read state[#{state}]"
         	line = read(client)
+        	puts "got[#{line}]"
         
         	if line == "close"
         		client.close
@@ -61,6 +62,7 @@ class RubyServer
 							next
 						else
 							client.puts "invalid protocol, expected auth"
+							puts "invalid protocol (got: #{line}), expected auth"
 							client.close
 							break
 						end
@@ -83,9 +85,11 @@ class RubyServer
 						if line == "mode display"
 							puts "mode display"
 							obj = RktDisplay.new client
+							client.puts "mode ok"
 						elsif line == "mode bot"
 							puts "mode robot"
 							obj = RktRobot.new client
+							client.puts "mode ok"							
 						else
 							client.puts "invalid protocol, expected mode <str>"
 							client.close
@@ -114,7 +118,7 @@ class RubyServer
   end
   
   def read client
-	 	client.gets.chop
+	 	client.gets.chomp
   end
   
   def log str

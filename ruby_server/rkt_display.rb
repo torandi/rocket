@@ -7,12 +7,17 @@ class RktDisplay
 	
 	def run line
 		i = 10
+		v = 0
 		loop do
+			puts "send data"
+		
 			@c.puts "clear"
-			@c.puts "ship nsg #{i} 100 45"
+			@c.puts "ship nsg #{i} 100 #{v}"
 			@c.puts "update"
-			sleep 1
+			sleep 0.05
+			
 			i = i + 1
+			v = v + 1
 		end
 	end
 
