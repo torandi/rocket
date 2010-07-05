@@ -1,0 +1,86 @@
+
+
+
+
+      c ----- dopefish
+      |
+      |
+      |
+     bot
+
+
+scan
+fire
+boost
+angle
+stop
+auth KEY
+name NAME		-> ready
+cversion
+sversion
+room
+
+<command> <data>
+
+> auth
+auth 4774 <-- alltid 4 tecken
+
+> auth ( n * n[1] ) + ( n[3] * 5 ) // Nollindexering!
+auth ok
+
+>auth (fel-kod)
+auth no
+
+> scan
+scan 45.78 34.98
+scan -78.56 34.56
+
+> name nsg
+name ok
+
+> cversion 1.23
+cversion yes				allt bra
+
+> cversion 1.12
+cversion ok
+Download lates version at ....		bra, men du har en gammal version
+
+> cversion 1.12
+cversion no
+Download lates version at ....		dåligt, gammal varsion, går ej att ansluta
+
+> sversion				serverns version
+sversion 2.56
+
+> room
+room foobar fint rum
+room foo no title
+
+> room foobar
+room ok
+
+> room blah
+room no
+
+grafiken	0.05	50 frames / sec
+
+command name x y vinkel status,[status...]
+
+Max 16 attribut är tillåtna
+
+clear
+ship foo 564 345 10 fire
+ship bar 564 345 23
+ship bar 564 345 10 boost
+ship bar 564 345 10
+update
+clear
+ship foo 564 345 10
+ship fo 564 345 10
+ship fb 564 345 10 boost,fire
+ship bar 564 345 10
+ship foo 564 345 10
+update
+
+Klient som ansluter till lokala client-programmet väntar på att servern svarar ready innan den gör något.
+

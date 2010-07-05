@@ -1,0 +1,471 @@
+/*
+ * ----------------------------------------------------------------------------
+ * "THE BEER-WARE LICENSE" (Revision 42):
+ * <torandi@gmail.com> wrote this file. As long as you retain this notice you
+ * can do whatever you want with this stuff. If we meet some day, and you think
+ * this stuff is worth it, you can buy me a beer in return.
+ * ----------------------------------------------------------------------------
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+#include "client.h"
+#include "gfx.h"
+#include "protocol.h"
+
+#define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
+
+#define SERVER_GFX_PORT 4711 //Port on botserver for gfx
+#define SERVER_BOT_PORT 4712 //Port on botserver for bots
+#define CLIENT_PORT 4713 //Port that bots will connect to localy
+#define SERVER_HOSTNAME "localhost"
+
+struct thread_data {
+	int mode;
+	int csock;
+	int ssock;
+};
+
+int init_server_connection();
+void * init_server_communication(void * data);
+void write(int sock,void * data,int len);
+void writeln(int sock,void * data,int len);
+void read_server(struct thread_data *td);
+void * read_client(void *data);
+void *new_client_thread(void *data);
+void close_socket();
+void * init_server();
+void * gfx_hndl();
+
+pthread_t sdl_event_t;
+pthread_t server_t; //Thread for handling clients
+pthread_t client_t; //Thread for communicating with server
+
+int server_sock=0; //Socket listening for new connections
+int client_sock; //Socket connected to server
+
+
+int main(int argc,char *argv[])
+{
+	struct thread_data td;
+	td.mode=MODE_GFX;
+	td.ssock=client_sock=init_server_connection(&td);
+	if(td.ssock==0) 
+		exit(1);
+
+	printf("GFX socket: %i\n",client_sock);
+	pthread_create(&client_t,NULL,init_server_communication,&td);
+	//Make sure the sockets is closed on exit
+	atexit(&close_socket);
+
+	//If the main thread exits using pthread_exit, the other will keep running
+	pthread_exit(NULL);
+}
+
+int init_server_connection(struct thread_data * td)
+{
+	int sockfd, n;
+	struct sockaddr_in serv_addr;
+	struct hostent * server;
+
+	int mode=td->mode;
+	int csock=td->csock;
+
+	int port;
+	if(mode==MODE_GFX)
+		port=SERVER_GFX_PORT;
+	else if(mode==MODE_BOT) 
+		port=SERVER_BOT_PORT;
+	else {
+		fprintf(stderr,"Internal error: Unknown mode\n");
+		exit(2);
+	}
+
+	printf("Connecting to server %s:%i\n",SERVER_HOSTNAME,port);
+
+	sockfd=socket(AF_INET,SOCK_STREAM,0);
+	if(sockfd < 0) {
+		fprintf(stderr,"Failed to initalize socket\n");
+		exit(-1);
+	}
+
+	server = gethostbyname(SERVER_HOSTNAME);
+	if(server==NULL) {
+		fprintf(stderr,"No such host %s\n",SERVER_HOSTNAME);
+		exit(-1);
+	}
+
+	//Set server addr and port in the socket
+	bzero((char *) &serv_addr, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	bcopy((char *)server->h_addr,
+			      (char *)&serv_addr.sin_addr.s_addr,
+					      server->h_length);
+
+	serv_addr.sin_port = htons(port);
+
+	if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
+		fprintf(stderr,"Connection failed.\n");
+		return 0;
+	} else {
+		printf("Connected to server\n");
+	}
+	
+	return sockfd;
+
+}
+
+/* Sends data through socket */
+void write(int sock,void * data,int len) {
+	int n = send(sock,data,len,MSG_DONTROUTE);
+
+	if(n<0) {
+		fprintf(stderr,"Failed to write to socket %i (%s).\n",sock,(char*)data);
+	}
+}
+
+/* Sends data through socket with newline*/
+void writeln(int sock,void * data,int len) {
+	char * senddata = malloc(len+1);
+	memcpy(senddata,data,len);
+	senddata[len]=0xA; //newline
+	int n = send(sock,senddata,len+1,MSG_DONTROUTE);
+	free(senddata);	
+
+	if(n<0) {
+		fprintf(stderr,"Failed to write to socket %i (%s).\n",sock,(char*)data);
+	}
+}
+
+void * init_server_communication(void * data) {
+	char buffer[50];
+	int len;
+	struct thread_data * td=  (struct thread_data *)data;
+
+	strcpy(buffer,PROT_VERSION);
+	len=strlen(buffer);
+
+	buffer[len++]=0x20; //space
+	strcpy(buffer+len,VERSION);
+
+	writeln(td->ssock,buffer,strlen(buffer));
+	
+	read_server(td);
+}
+
+
+void read_server(struct thread_data *td) {
+	char * buffer = calloc(1024,sizeof(int)); //readbuffer
+	char * buffer2 = NULL; //readbuffer
+	char * data=NULL; //data to parse
+	char * next_newline=NULL;
+	bool run=true;
+	char * next_write=buffer; //next position in buffer to write to
+	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
+	bool mode_ok=false;
+	int ssock=td->ssock;
+	int mode=td->mode;
+	int csock=td->csock;
+
+	while(run) {
+		int n;
+
+		while(next_newline==NULL) {
+			n=read(ssock,next_write,1024);
+			if(n<=0) {
+				run=false;
+				break;
+			}
+			next_newline=strchr(buffer,'\n');
+			next_write+=n;
+		}
+		if(!run)
+			break;
+		
+		data=buffer;
+		*next_newline=0;
+
+		printf("Got data: %s\n",data);
+
+
+		//cversion
+		if(CMP_BUFFER(PROT_VERSION)) {
+			if(strcmp(buffer+strlen(PROT_VERSION)+1,"yes")==0) {
+				printf("Version good\n");
+			} else if(strncmp(buffer+strlen(PROT_VERSION)+1,"ok",2)==0) {
+				const char * msg=buffer+strlen(PROT_VERSION)+4;
+				printf("Version ok\n%s\n",msg);
+			} else if(strncmp(buffer+strlen(PROT_VERSION)+1,"no",2)==0) {
+				const char * msg=buffer+strlen(PROT_VERSION)+4;
+				printf("Invalid version\n%s\n",msg);
+				run=false;
+				break;
+			} else {
+				printf("Invalid version\n");
+				run=false;
+				break;
+			}
+			auth_stage=AUTH_REQUEST_SENT;
+			writeln(ssock,PROT_AUTH,sizeof(PROT_AUTH));
+		}
+		if(CMP_BUFFER(PROT_AUTH)) {
+			switch(auth_stage) {
+				case AUTH_REQUEST_SENT:
+					{
+						char * auth_code;
+						int auth_answer;
+						auth_code=buffer+sizeof(PROT_AUTH)+1;
+						auth_answer=protocol_authorize(auth_code);
+						sprintf(buffer,"%s %i",PROT_AUTH,auth_answer);
+						auth_stage=AUTH_CODE_SENT;
+						writeln(ssock,buffer,strlen(buffer)+1);
+						break;
+					}
+				case AUTH_CODE_SENT:
+					if(strcmp(buffer+strlen(PROT_AUTH)+1,"ok")==0) {
+						auth_stage=AUTH_DONE;
+					} else {
+						fprintf(stderr,"Authorisation failed\n");
+						run=false;
+					}
+					break;
+				default:
+					fprintf(stderr,"Invalid answer from server in authorisation, disconnecting\n");
+					run=false;
+			}
+
+			if(auth_stage==AUTH_DONE) {
+				switch(mode) {
+					case MODE_GFX:
+						writeln(ssock,PROT_SEND_MODE_DISPLAY,sizeof(PROT_SEND_MODE_DISPLAY));
+						break;
+					case MODE_BOT:
+						writeln(ssock,PROT_SEND_MODE_BOT,sizeof(PROT_SEND_MODE_BOT));
+						break;
+					default:
+						printf("Unknown mode\n");
+					
+				}
+			}
+		} else if(CMP_BUFFER(PROT_MODE_OK)) {
+			printf("mode accepted\n");
+			mode_ok=true;
+			//if gfx mode, start sdl
+			if(mode==MODE_GFX) {
+				init_sdl();
+				
+				//Thread for handling sdl events
+				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
+				//Start server
+				pthread_create(&server_t,NULL,init_server,NULL);
+			} else if(mode==MODE_BOT) {
+				//Start thread for forwardning from client->botserver
+				pthread_t tmp_thread_t;
+				pthread_create(&tmp_thread_t,NULL,read_client,td);
+				//Tell client that we are ready to forward data to the server
+				writeln(csock,"ready",sizeof("ready"));
+				goto parsing_done; //jump to parsing done (to prevent forwarding "mode ok")
+			}
+		}
+
+		/*
+		 * Start GFX mode
+		 */
+		if(mode==MODE_GFX && mode_ok) {
+			if(CMP_BUFFER(PROT_GFX_CLEAR)) {
+				gfx_clear();
+			} else if(CMP_BUFFER(PROT_GFX_UPDATE)) {
+				gfx_update();
+			} else if(CMP_BUFFER(PROT_GFX_SHIP)) {
+				char nick[32];
+				gfx_attr_t attr[16];
+				int num_attr=0;
+				int x, y, a;
+				char * attr_str=malloc(128);
+				int n=sscanf(buffer,"ship %s %i %i %i %s",nick,&x,&y,&a,attr_str);
+				if(n>=4) {
+					if(n==5) {
+						//Got attributes
+						char cur_attr[32];
+						int pos;
+						while(strlen(attr_str)>0) {
+							bzero(cur_attr,32);
+							pos=0;
+							while(*attr_str!=0x2C) // 0x2C=','
+								cur_attr[pos++]=*(attr_str++);
+							++attr_str;
+							printf("Found attr: %s\n",cur_attr);
+							if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
+								attr[num_attr++]=GFX_ATTR_SHOOT;
+							} else if(strcmp(cur_attr,PROT_GFX_ATTR_BOOST)==0) {
+								attr[num_attr++]=GFX_ATTR_BOOST;
+							} else {
+								fprintf(stderr,"Got unknown attribute %s\n",cur_attr);
+							}
+						}
+					}
+					draw_ship(nick,x,y,a,attr,num_attr);
+					free(attr_str);
+				} else {
+					fprintf(stderr,"Invalid data from gfx server\n");
+				}
+			}
+		}
+
+		/*
+		 * End GFX mode
+		 */
+
+		/*
+		 * Start BOT mode
+		 */
+		if(mode==MODE_BOT && mode_ok) {
+			//Forward data
+			writeln(csock,data,strlen(data)+1);
+		}
+
+		
+
+parsing_done:
+		//parsing done
+		//increase next_newline since we only are intrested in the byte after now
+		next_newline++;
+		if(next_write>next_newline) {
+			//keep remaining data in buffer
+			buffer2=calloc(1024,sizeof(int));
+			memcpy(buffer2,next_newline,next_write-next_newline);
+			free(buffer);
+			buffer=buffer2;
+			next_newline=strchr(buffer,'\n'); //Find next newline in buffer (or NULL if cont to read)
+			printf("Moved around in buffer, is now: %s\n",buffer); 
+		} else {
+			free(buffer);
+			buffer=calloc(1024,sizeof(int));
+			next_write=buffer;
+			next_newline=NULL;
+		}
+	}
+
+	printf("Disconnected from server (socket: %i)\n",ssock);
+	free(buffer);
+}
+
+void * read_client(void * data) {
+	struct thread_data *td=(struct thread_data*)data;
+	int csock=td->csock;
+	int ssock=td->ssock;
+
+	char * buffer = calloc(1024,sizeof(int)); //readbuffer
+	bool run=true;
+
+	while(run) {
+		int n;
+
+		n=read(csock,buffer,1024);
+		if(n<=0) {
+			run=false;
+			break;
+		}
+		//Forward data
+		write(ssock,buffer,n);
+	}
+
+	printf("Disconnected from server (socket: %i)\n",ssock);
+	free(buffer);
+}
+
+//inits server for bots
+void * init_server()
+{
+     int newserver_sock, clilen;
+     struct sockaddr_in serv_addr, cli_addr;
+	  pthread_attr_t thread_attr;
+     int n;
+	  int one=1;
+	  int server_sock;
+
+     server_sock = socket(AF_INET, SOCK_STREAM, 0);
+	  printf("Server socket: %i\n",server_sock);
+
+	  
+	  setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR,&one,sizeof(one));
+
+	  printf("Initializing server...\n");
+	  
+
+     if (server_sock < 0) {
+        fprintf(stderr,"Error: Failed to open socket.\n");
+			exit(1);
+	  }
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons(CLIENT_PORT);
+     if (bind(server_sock, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0) {
+		  fprintf(stderr,"Error: Failed to bind socket to port %i\n",CLIENT_PORT);
+		  exit(1);
+	  }
+ 
+
+	  //Set thread attributes
+	  pthread_attr_init(&thread_attr);
+	  pthread_attr_setdetachstate(&thread_attr,PTHREAD_CREATE_DETACHED);
+
+	  printf("Server is ready\n");
+
+	  while(1) {
+		  listen(server_sock,5);
+		  clilen = sizeof(cli_addr);
+		  newserver_sock = accept(server_sock, 
+						  (struct sockaddr *) &cli_addr, 
+						  &clilen);
+		  if (newserver_sock < 0) {
+				 fprintf(stderr,"Error: Failed to accept'\n");
+				 continue;
+		  }
+		pthread_t tmp_client_t;
+		pthread_create(&tmp_client_t,&thread_attr,new_client_thread,(void *)&newserver_sock);
+	}
+}
+
+void close_socket() {
+	if(server_sock!=0)
+		close(server_sock);
+	close(client_sock);
+}
+
+void *new_client_thread(void *data) {
+	int *sock=(int *)data;
+	struct thread_data td;
+	td.mode=MODE_BOT;
+	td.csock=*sock;
+	td.ssock=init_server_connection(&td);
+	if(td.ssock==0) {
+		fprintf(stderr,"Couldn't connect to botserver\n");
+		return NULL;
+	}
+	printf("Client socket: %i\n",client_sock);
+	init_server_communication(&td); //start the connection to the server
+	return NULL;
+}
+
+/*
+ * handles the sdl windows and closes it if necesary
+ */
+void * gfx_hndl() {
+	while(1) {
+		if(hndl_sdl_events()!=0){
+			exit(0);
+		}
+		usleep(100);
+	}
+}
