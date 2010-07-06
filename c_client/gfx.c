@@ -121,6 +121,12 @@ void draw_ship(char nick[32],int x, int y, int a,gfx_attr_t *attr,int num_attr) 
 	
 	slock();
 
+	SDL_Surface *text_surface=TTF_RenderText_Blended(font,nick,font_color);
+	SDL_Rect text_rect;
+	text_rect.x=x-(2*strlen(nick)*NICK_FONT_SIZE)/7;
+	text_rect.y=y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
+
+	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
 	SDL_Surface *rotated_ship=rotozoomSurface(ship,a,1.0,1);
 	SDL_Rect ship_pos;
 	ship_pos.x=x-HALF_SHIP_SIZE;
@@ -128,12 +134,6 @@ void draw_ship(char nick[32],int x, int y, int a,gfx_attr_t *attr,int num_attr) 
 	SDL_BlitSurface(rotated_ship,NULL,screen,&ship_pos);
 	SDL_FreeSurface(rotated_ship);
 
-	SDL_Surface *text_surface=TTF_RenderText_Blended(font,nick,font_color);
-	SDL_Rect text_rect;
-	text_rect.x=x-(2*strlen(nick)*NICK_FONT_SIZE)/7;
-	text_rect.y=y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
-
-	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
 	SDL_FreeSurface(text_surface);
 
 	sulock();

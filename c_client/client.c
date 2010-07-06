@@ -26,8 +26,8 @@
 #define SERVER_GFX_PORT 4711 //Port on botserver for gfx
 #define SERVER_BOT_PORT 4712 //Port on botserver for bots
 #define CLIENT_PORT 4710 //Port that bots will connect to localy
-#define SERVER_HOSTNAME "192.168.0.5"
-//#define SERVER_HOSTNAME "localhost"
+//#define SERVER_HOSTNAME "192.168.0.5"
+#define SERVER_HOSTNAME "localhost"
 
 struct thread_data {
 	int mode;
@@ -186,6 +186,7 @@ void read_server(struct thread_data *td) {
 	while(run) {
 		int n;
 
+
 		while(next_newline==NULL) {
 			n=read(ssock,next_write,1024);
 			if(n<=0) {
@@ -201,8 +202,7 @@ void read_server(struct thread_data *td) {
 		data=buffer;
 		*next_newline=0;
 
-		printf("Got data: [%s]\n",data);
-
+		printf(">>%s\n",data);
 
 		//cversion
 		if(CMP_BUFFER(PROT_VERSION)) {
@@ -346,14 +346,16 @@ parsing_done:
 		//parsing done
 		//increase next_newline since we only are intrested in the byte after now
 		next_newline++;
+		//If next_write>next_newline there is remaining data in the buffer
 		if(next_write>next_newline) {
 			//keep remaining data in buffer
 			buffer2=calloc(1024,sizeof(int));
 			memcpy(buffer2,next_newline,next_write-next_newline);
 			free(buffer);
 			buffer=buffer2;
+			next_write=buffer2+(next_write-next_newline);
 			next_newline=strchr(buffer,'\n'); //Find next newline in buffer (or NULL if cont to read)
-			printf("Moved around in buffer, is now: %s\n",buffer); 
+			//printf("Moved around in buffer, is now: %s\n",buffer); 
 		} else {
 			free(buffer);
 			buffer=calloc(1024,sizeof(int));
