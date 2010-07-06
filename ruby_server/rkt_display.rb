@@ -12,8 +12,8 @@ class RktDisplay
 			puts "send data"
 		
 			@c.puts "clear"
-			@c.puts "ship nsg #{i} 100 #{v}"
-			@c.puts "ship torandi #{600-i} 200 #{180-v} boost"
+			@c.puts "ship nsg #{i} 100 #{v} shoot"
+			@c.puts "ship torandi #{600-i} 200 #{180-v} boost,shoot"
 			@c.puts "update"
 			sleep 0.05
 			

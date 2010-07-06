@@ -1,5 +1,5 @@
 LDFLAGS=-pthread -lSDL -lSDL_gfx -lSDL_ttf -lSDL_image 
-CFLAGS = 
+CFLAGS = -g -Wall
 
 all: client
 
