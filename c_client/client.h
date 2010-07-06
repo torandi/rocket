@@ -17,13 +17,4 @@
 		AUTH_CODE_SENT,
 		AUTH_DONE
 	} auth_stage_t;
-
-
-	//latversion av bool
-	typedef unsigned char bool;
-	#define true 1
-	#define false 0
-
-
-
 #endif

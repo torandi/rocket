@@ -1,4 +1,5 @@
 LDFLAGS=-pthread -lSDL -lSDL_gfx -lSDL_ttf -lSDL_image 
+CFLAGS = 
 
 all: client
 

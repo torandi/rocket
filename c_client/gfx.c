@@ -6,6 +6,7 @@
 #include <SDL/SDL_rotozoom.h>
 
 #include "gfx.h"
+#include "common.h"
 
 #define SCREEN_WIDTH  640 // width of the screen, in pixels
 #define SCREEN_HEIGHT 480 // height of the screen, in pixels
@@ -16,13 +17,18 @@
 #define NICK_FONT_SIZE 22
 #define SMOOTH_ROTATION 0
 
+#define FONT_FILE "data/Acknowledge_TT_BRK.ttf"
+#define SHIP_GFX "data/ship.png"
+#define SHIP_BOOST_GFX "data/ship_boost.png"
+
+
 #define PI 3.14159265
 
 SDL_Surface *screen; 
 SDL_Event    event;
 SDL_Rect	screen_area;
 TTF_Font * font;
-SDL_Surface * ship;
+SDL_Surface * ship,*ship_boost;
 SDL_Color font_color={0xFF,0xFF,0xFF};
 
 void slock();
@@ -58,7 +64,7 @@ int init_sdl() {
 		return 2;
 	}
 
-	font=loadfont("Acknowledge_TT_BRK.ttf",NICK_FONT_SIZE);
+	font=loadfont(FONT_FILE,NICK_FONT_SIZE);
 
 	if ((screen =
 				SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, 8, SDL_SWSURFACE ))
@@ -75,12 +81,22 @@ int init_sdl() {
 	SDL_WM_SetCaption( "Rocket - Robot Sockets", "Rocket - Robot Sockets" );
 	SDL_ShowCursor( SDL_DISABLE );
 
-	SDL_Surface * tmp=IMG_Load("ship.png");
+	//Load ship image
+	SDL_Surface * tmp=IMG_Load(SHIP_GFX);
 	if(tmp==NULL) {
-		    printf("IMG_Load: %s\n", IMG_GetError());
+		    printf("Error: Failed to load ship gfx (%s)\n", IMG_GetError());
 			 return 4;
 	}
 	ship=SDL_DisplayFormatAlpha(tmp);
+	SDL_FreeSurface(tmp);
+
+	//Load ship boost image
+	tmp=IMG_Load(SHIP_BOOST_GFX);
+	if(tmp==NULL) {
+		    printf("Error: Failed to load ship boost gfx (%s)\n", IMG_GetError());
+			 return 4;
+	}
+	ship_boost=SDL_DisplayFormatAlpha(tmp);
 	SDL_FreeSurface(tmp);
 
 	return 0;
@@ -117,7 +133,7 @@ int hndl_sdl_events() {
 /**
  * Draws a ship at (x,y) directed at angle a (in degrees). 
  */
-void draw_ship(char nick[32],int x, int y, int a,gfx_attr_t *attr,int num_attr) {
+void draw_ship(char nick[32],int x, int y, int a,bool attr[NUM_GFX_ATTR]) {
 	Uint32 color = 0xFFFFFFFF;
 	
 	slock();
@@ -127,8 +143,13 @@ void draw_ship(char nick[32],int x, int y, int a,gfx_attr_t *attr,int num_attr) 
 	text_rect.x=x-(2*strlen(nick)*NICK_FONT_SIZE)/7;
 	text_rect.y=y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
 
+	SDL_Surface * cur_ship=ship;
+	if(attr[GFX_ATTR_BOOST]) {
+		cur_ship=ship_boost;
+	}
+
 	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
-	SDL_Surface *rotated_ship=rotozoomSurface(ship,a,1.0,SMOOTH_ROTATION);
+	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,a,1.0,SMOOTH_ROTATION);
 	SDL_Rect ship_pos;
 	ship_pos.x=x-HALF_SHIP_SIZE;
 	ship_pos.y=y-HALF_SHIP_SIZE;
@@ -138,8 +159,6 @@ void draw_ship(char nick[32],int x, int y, int a,gfx_attr_t *attr,int num_attr) 
 	SDL_FreeSurface(text_surface);
 
 	sulock();
-	//Update area
-	//SDL_UpdateRect(screen,x-HALF_SHIP_SIZE,y-HALF_SHIP_SIZE,SHIP_SIZE,SHIP_SIZE);
 }
 
 void gfx_update() {

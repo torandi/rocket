@@ -19,6 +19,7 @@
 
 #include "client.h"
 #include "gfx.h"
+#include "common.h"
 #include "protocol.h"
 
 #define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
@@ -294,34 +295,39 @@ void read_server(struct thread_data *td) {
 				gfx_update();
 			} else if(CMP_BUFFER(PROT_GFX_SHIP)) {
 				char nick[32];
-				gfx_attr_t attr[16];
-				int num_attr=0;
+				bool attr[NUM_GFX_ATTR];
 				int x, y, a;
+				void * attr_org;
 				char * attr_str=malloc(128);
+				attr_org=attr_str; //save a pointer to orginal allocated memory
+				bzero(attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
+				
 				int n=sscanf(buffer,"ship %s %i %i %i %s",nick,&x,&y,&a,attr_str);
 				if(n>=4) {
 					if(n==5) {
+						printf("Attr: %s\n",attr_str);
 						//Got attributes
 						char cur_attr[32];
 						int pos;
 						while(strlen(attr_str)>0) {
 							bzero(cur_attr,32);
 							pos=0;
-							while(*attr_str!=0x2C) // 0x2C=','
+							while(*attr_str!=0x2C && *attr_str!=0) // 0x2C=','
 								cur_attr[pos++]=*(attr_str++);
-							++attr_str;
+							if(*attr_str!=0)
+								++attr_str;
 							printf("Found attr: %s\n",cur_attr);
 							if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
-								attr[num_attr++]=GFX_ATTR_SHOOT;
+								attr[GFX_ATTR_SHOOT]=true;
 							} else if(strcmp(cur_attr,PROT_GFX_ATTR_BOOST)==0) {
-								attr[num_attr++]=GFX_ATTR_BOOST;
+								attr[GFX_ATTR_BOOST]=true;
 							} else {
 								fprintf(stderr,"Got unknown attribute %s\n",cur_attr);
 							}
 						}
 					}
-					draw_ship(nick,x,y,a,attr,num_attr);
-					free(attr_str);
+					draw_ship(nick,x,y,a,attr);
+					free(attr_org);
 				} else {
 					fprintf(stderr,"Invalid data from gfx server\n");
 				}
@@ -339,6 +345,9 @@ void read_server(struct thread_data *td) {
 			//Forward data
 			writeln(csock,data,strlen(data)+1);
 		}
+		/*
+		 * End BOT mode
+		 */
 
 		
 
