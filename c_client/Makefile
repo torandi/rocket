@@ -1,4 +1,4 @@
-LDFLAGS=-pthread -lSDL -lSDL_gfx -lSDL_ttf
+LDFLAGS=-pthread -lSDL -lSDL_gfx -lSDL_ttf -lSDL_image 
 
 all: client
 

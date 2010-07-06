@@ -3,7 +3,7 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 #include <SDL/SDL_image.h>
-#include <SDL/SDL_gfxPrimitives.h>
+#include <SDL/SDL_rotozoom.h>
 
 #include "gfx.h"
 
@@ -12,6 +12,8 @@
 
 #define SHIP_SIZE 32
 #define HALF_SHIP_SIZE SHIP_SIZE/2
+
+#define NICK_FONT_SIZE 22
 
 #define PI 3.14159265
 
@@ -28,7 +30,7 @@ int radians_to_degrees(double rad);
 double degrees_to_radians(int d);
 TTF_Font* loadfont(char* file, int ptsize);
 
-
+/*
 void main() {
 	init_sdl();
 	while(1) {
@@ -40,7 +42,7 @@ void main() {
 		}
 		sleep(100);
 	}
-}
+}*/
 
 int init_sdl() {
 	if (SDL_Init( SDL_INIT_VIDEO ) != 0) {
@@ -55,7 +57,7 @@ int init_sdl() {
 		return 2;
 	}
 
-	font=loadfont("Acknowledge_TT_BRK.ttf",sizeof("Acknowledge_TT_BRK.ttf"));
+	font=loadfont("Acknowledge_TT_BRK.ttf",NICK_FONT_SIZE);
 
 	if ((screen =
 				SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, 8, SDL_SWSURFACE ))
@@ -63,21 +65,22 @@ int init_sdl() {
 
 		fprintf( stderr, "Could not set SDL video mode: %s\n", SDL_GetError() );
 		return 3;
-	
-	SDL_WM_SetCaption( "Rocket - Robot Sockets", "Rocket - Robot Sockets" );
-	SDL_ShowCursor( SDL_DISABLE );
-
-	ship=IMG_Load("ship.png");
-	if(!ship) {
-		    printf("IMG_Load: %s\n", IMG_GetError());
-			 return 4;
-	}
-
 	} // if (could not set mode)
 	screen_area.x=0;
 	screen_area.y=0;
 	screen_area.w=SCREEN_WIDTH;
 	screen_area.h=SCREEN_HEIGHT;
+
+	SDL_WM_SetCaption( "Rocket - Robot Sockets", "Rocket - Robot Sockets" );
+	SDL_ShowCursor( SDL_DISABLE );
+
+	SDL_Surface * tmp=IMG_Load("ship.png");
+	if(tmp==NULL) {
+		    printf("IMG_Load: %s\n", IMG_GetError());
+			 return 4;
+	}
+	ship=SDL_DisplayFormatAlpha(tmp);
+	SDL_FreeSurface(tmp);
 
 	return 0;
 }
@@ -115,18 +118,21 @@ int hndl_sdl_events() {
  */
 void draw_ship(char nick[32],int x, int y, int a,gfx_attr_t *attr,int num_attr) {
 	Uint32 color = 0xFFFFFFFF;
-	double angle = degrees_to_radians(a);
 	
 	slock();
 
-	//SDL_Surface *ship_surface;
-	SDL_Rect ship_pos={x,y,SHIP_SIZE,SHIP_SIZE};
-	SDL_BlitSurface(ship,NULL,screen,NULL);
-
-	//aatrigonColor(screen, x+SHIP_SIZE*cos(angle),y+SHIP_SIZE*sin(angle),x+SHIP_SIZE*cos(angle+2*PI/3),y+SHIP_SIZE*sin(angle+2*PI/3),x+SHIP_SIZE*cos(angle+4*PI/3),y+SHIP_SIZE*sin(angle+4*PI/3),color);
+	SDL_Surface *rotated_ship=rotozoomSurface(ship,a,1.0,1);
+	SDL_Rect ship_pos;
+	ship_pos.x=x-HALF_SHIP_SIZE;
+	ship_pos.y=y-HALF_SHIP_SIZE;
+	SDL_BlitSurface(rotated_ship,NULL,screen,&ship_pos);
+	SDL_FreeSurface(rotated_ship);
 
 	SDL_Surface *text_surface=TTF_RenderText_Blended(font,nick,font_color);
-	SDL_Rect text_rect={x-40,y-HALF_SHIP_SIZE-30,16,6};
+	SDL_Rect text_rect;
+	text_rect.x=x-(2*strlen(nick)*NICK_FONT_SIZE)/7;
+	text_rect.y=y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
+
 	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
 	SDL_FreeSurface(text_surface);
 
