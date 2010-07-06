@@ -72,7 +72,7 @@ class RubyServer
 						auth_sum = (hash.to_i * hash[1,1].to_i ) + ( hash[3,1].to_i * 5)
 						puts "auth_sum[#{auth_sum}] hash[#{hash}]"
 						
-						if true || line.split[1].to_i == auth_sum
+						if line.split[1].to_i == auth_sum
 							client.puts "auth ok"
 							state = 3
 							next

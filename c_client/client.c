@@ -230,7 +230,7 @@ void read_server(struct thread_data *td) {
 					{
 						char * auth_code;
 						int auth_answer;
-						auth_code=buffer+sizeof(PROT_AUTH)+1;
+						auth_code=buffer+strlen(PROT_AUTH)+1;
 						auth_answer=protocol_authorize(auth_code);
 						sprintf(buffer,"%s %i",PROT_AUTH,auth_answer);
 						auth_stage=AUTH_CODE_SENT;

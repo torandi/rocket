@@ -14,6 +14,7 @@
 #define HALF_SHIP_SIZE SHIP_SIZE/2
 
 #define NICK_FONT_SIZE 22
+#define SMOOTH_ROTATION 0
 
 #define PI 3.14159265
 
@@ -127,7 +128,7 @@ void draw_ship(char nick[32],int x, int y, int a,gfx_attr_t *attr,int num_attr) 
 	text_rect.y=y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
 
 	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
-	SDL_Surface *rotated_ship=rotozoomSurface(ship,a,1.0,1);
+	SDL_Surface *rotated_ship=rotozoomSurface(ship,a,1.0,SMOOTH_ROTATION);
 	SDL_Rect ship_pos;
 	ship_pos.x=x-HALF_SHIP_SIZE;
 	ship_pos.y=y-HALF_SHIP_SIZE;
