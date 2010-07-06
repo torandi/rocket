@@ -13,6 +13,7 @@ class RktDisplay
 		
 			@c.puts "clear"
 			@c.puts "ship nsg #{i} 100 #{v}"
+			@c.puts "ship torandi #{600-i} 200 #{180-v}"
 			@c.puts "update"
 			sleep 0.05
 			
