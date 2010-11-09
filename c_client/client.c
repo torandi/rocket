@@ -8,6 +8,7 @@
  */
 
 #define DEBUG 1
+#define VERBOSE 0
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,7 +42,7 @@ pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
 double server_time_offset; //The number of seconds we differ from the server
-double max_frame_age=1.0; //The max age of a frame in seconds
+double max_frame_age=2.0; //The max age of a frame in seconds
 
 
 int main(int argc,char *argv[])
@@ -177,11 +178,14 @@ void read_server(struct thread_data *td) {
 
 		double local_time=get_time();
 
-#if DEBUG
+#if VERBOSE
 		printf(">>%s\n",data);
 #endif
 
 		if(ignore_frame) {
+#if DEBUG
+			printf("DROP!\n");
+#endif
 			ignore_frame=!CMP_BUFFER(PROT_GFX_FRAME_STOP); //Set to false if 
 																		  //we recieved frame stop
 			goto parsing_done;
@@ -279,12 +283,12 @@ void read_server(struct thread_data *td) {
 			if(CMP_BUFFER(PROT_GFX_FRAME_START)) {
 				double server_time;
 				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
-				server_time+=server_time_offset;
-				if(local_time-server_time<max_frame_age) {
+				double age=local_time-(server_time+server_time_offset);
+				if(age<max_frame_age) {
 					gfx_clear();
 				} else {
 #if DEBUG
-					printf("Dropping frame! %lf s old.\n",local_time-server_time);
+					printf("Dropping frame! %lf s old.\n",age);
 #endif
 					ignore_frame=true;			
 					goto parsing_done;
@@ -303,7 +307,7 @@ void read_server(struct thread_data *td) {
 				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,nick,&x,&y,&a,attr_str);
 				if(n>=4) {
 					if(n==5) {
-#if DEBUG
+#if VERBOSE
 						printf("Attr: %s\n",attr_str);
 #endif
 						//Got attributes
@@ -316,7 +320,7 @@ void read_server(struct thread_data *td) {
 								cur_attr[pos++]=*(attr_str++);
 							if(*attr_str!=0)
 								++attr_str;
-#if DEBUG
+#if VERBOSE
 							printf("Found attr: %s\n",cur_attr);
 #endif
 							if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
