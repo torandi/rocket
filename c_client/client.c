@@ -18,6 +18,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include "connection.h"
 #include "client.h"
 #include "gfx.h"
 #include "common.h"
@@ -25,26 +26,11 @@
 
 #define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
 
-#define SERVER_GFX_PORT 4711 //Port on botserver for gfx
-#define SERVER_BOT_PORT 4712 //Port on botserver for bots
-#define CLIENT_PORT 4710 //Port that bots will connect to localy
-//#define SERVER_HOSTNAME "192.168.0.5"
-#define SERVER_HOSTNAME "localhost"
-
-struct thread_data {
-	int mode;
-	int csock;
-	int ssock;
-};
-
 int init_server_connection();
 void * init_server_communication(void * data);
-void write_data(int sock,void * data,int len);
-void writeln(int sock,void * data,int len);
 void read_server(struct thread_data *td);
 void * read_client(void *data);
 void *new_client_thread(void *data);
-void close_socket();
 void * init_server();
 void * gfx_hndl();
 
@@ -52,12 +38,9 @@ pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
 
-int server_sock=0; //Socket listening for new connections
-int client_sock; //Socket connected to server
-
-
 int main(int argc,char *argv[])
 {
+	server_sock=0;
 	struct thread_data td;
 	td.mode=MODE_GFX;
 	td.ssock=init_server_connection(&td);
@@ -129,27 +112,6 @@ int init_server_connection(struct thread_data * td)
 
 }
 
-/* Sends data through socket */
-void write_data(int sock,void * data,int len) {
-	int n = send(sock,data,len,MSG_DONTROUTE);
-
-	if(n<0) {
-		fprintf(stderr,"Failed to write to socket %i (%s).\n",sock,(char*)data);
-	}
-}
-
-/* Sends data through socket with newline*/
-void writeln(int sock,void * data,int len) {
-	char * senddata = malloc(len);
-	memcpy(senddata,data,len-1);
-	senddata[len-1]=0xA; //newline
-	int n = send(sock,senddata,len,MSG_DONTROUTE);
-	free(senddata);	
-
-	if(n<0) {
-		fprintf(stderr,"Failed to write to socket %i (%s).\n",sock,(char*)data);
-	}
-}
 
 void * init_server_communication(void * data) {
 	char buffer[50];
@@ -190,7 +152,7 @@ void read_server(struct thread_data *td) {
 
 
 		while(next_newline==NULL) {
-			n=read(ssock,next_write,1024);
+			n=read_data(ssock,next_write,1024);
 			if(n<=0) {
 				run=false;
 				break;
@@ -395,7 +357,7 @@ void * read_client(void * data) {
 	while(run) {
 		int n;
 
-		n=read(csock,buffer,1024);
+		n=read_data(csock,buffer,1024);
 		if(n<=0) {
 			run=false;
 			break;
@@ -466,12 +428,6 @@ void * init_server()
 		memcpy(data,&newserver_sock,sizeof(newserver_sock));
 		pthread_create(&tmp_client_t,&thread_attr,new_client_thread,data);
 	}
-}
-
-void close_socket() {
-	if(server_sock!=0)
-		close(server_sock);
-	close(client_sock);
 }
 
 void *new_client_thread(void *data) {

@@ -17,4 +17,10 @@
 		AUTH_CODE_SENT,
 		AUTH_DONE
 	} auth_stage_t;
+
+	struct thread_data {
+		int mode;
+		int csock;
+		int ssock;
+	};
 #endif
