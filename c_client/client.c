@@ -26,7 +26,7 @@
 
 #define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
 
-int init_server_connection();
+socket_data * init_server_connection(struct thread_data * data);
 void * init_server_communication(void * data);
 void read_server(struct thread_data *td);
 void * read_client(void *data);
@@ -40,7 +40,6 @@ pthread_t client_t; //Thread for communicating with server
 
 int main(int argc,char *argv[])
 {
-	server_sock=0;
 	struct thread_data td;
 	td.mode=MODE_GFX;
 	td.ssock=init_server_connection(&td);
@@ -49,29 +48,32 @@ int main(int argc,char *argv[])
 	if(td.ssock==0) 
 		exit(1);
 
-	printf("GFX socket: %i\n",client_sock);
+	printf("GFX socket: %i\n",client_sock->socket);
 	void * data = malloc(sizeof(td));
 	memcpy(data,&td,sizeof(td));
 	pthread_create(&client_t,NULL,init_server_communication,data);
 	//Make sure the sockets is closed on exit
-	atexit(&close_socket);
+	atexit(&close_sockets);
 
 	//If the main thread exits using pthread_exit, the other will keep running
 	pthread_exit(NULL);
 }
 
-int init_server_connection(struct thread_data * td)
+/**
+ * Initializes the connection to the robot server
+ * @return The int for the socket that was created
+ */
+socket_data * init_server_connection(struct thread_data * td)
 {
 	int sockfd;
 	struct sockaddr_in serv_addr;
 	struct hostent * server;
 
-	int mode=td->mode;
 
 	int port;
-	if(mode==MODE_GFX)
+	if(td->mode==MODE_GFX)
 		port=SERVER_GFX_PORT;
-	else if(mode==MODE_BOT) 
+	else if(td->mode==MODE_BOT) 
 		port=SERVER_BOT_PORT;
 	else {
 		fprintf(stderr,"Internal error: Unknown mode\n");
@@ -108,7 +110,7 @@ int init_server_connection(struct thread_data * td)
 		printf("Connected to server\n");
 	}
 	
-	return sockfd;
+	return init_socket(sockfd,1);
 
 }
 
@@ -133,7 +135,9 @@ void * init_server_communication(void * data) {
 	return 0;
 }
 
-
+/**
+ * Handles communication with the robot server
+ */
 void read_server(struct thread_data *td) {
 	char * buffer = calloc(1024,sizeof(int)); //readbuffer
 	char * buffer2 = NULL; //readbuffer
@@ -143,16 +147,13 @@ void read_server(struct thread_data *td) {
 	char * next_write=buffer; //next position in buffer to write to
 	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
 	bool mode_ok=false;
-	int ssock=td->ssock;
-	int mode=td->mode;
-	int csock=td->csock;
 
 	while(run) {
 		int n;
 
 
 		while(next_newline==NULL) {
-			n=read_data(ssock,next_write,1024);
+			n=read_data(td->ssock,next_write,1024);
 			if(n<=0) {
 				run=false;
 				break;
@@ -186,7 +187,7 @@ void read_server(struct thread_data *td) {
 				break;
 			}
 			auth_stage=AUTH_REQUEST_SENT;
-			writeln(ssock,PROT_AUTH,sizeof(PROT_AUTH));
+			writeln(td->ssock,PROT_AUTH,sizeof(PROT_AUTH));
 		}
 		if(CMP_BUFFER(PROT_AUTH)) {
 			switch(auth_stage) {
@@ -198,7 +199,7 @@ void read_server(struct thread_data *td) {
 						auth_answer=protocol_authorize(auth_code);
 						sprintf(buffer,"%s %i",PROT_AUTH,auth_answer);
 						auth_stage=AUTH_CODE_SENT;
-						writeln(ssock,buffer,strlen(buffer)+1);
+						writeln(td->ssock,buffer,strlen(buffer)+1);
 						break;
 					}
 				case AUTH_CODE_SENT:
@@ -215,12 +216,12 @@ void read_server(struct thread_data *td) {
 			}
 
 			if(auth_stage==AUTH_DONE) {
-				switch(mode) {
+				switch(td->mode) {
 					case MODE_GFX:
-						writeln(ssock,PROT_SEND_MODE_DISPLAY,sizeof(PROT_SEND_MODE_DISPLAY));
+						writeln(td->ssock,PROT_SEND_MODE_DISPLAY,sizeof(PROT_SEND_MODE_DISPLAY));
 						break;
 					case MODE_BOT:
-						writeln(ssock,PROT_SEND_MODE_BOT,sizeof(PROT_SEND_MODE_BOT));
+						writeln(td->ssock,PROT_SEND_MODE_BOT,sizeof(PROT_SEND_MODE_BOT));
 						break;
 					default:
 						printf("Unknown mode\n");
@@ -231,19 +232,19 @@ void read_server(struct thread_data *td) {
 			printf("mode accepted\n");
 			mode_ok=true;
 			//if gfx mode, start sdl
-			if(mode==MODE_GFX) {
+			if(td->mode==MODE_GFX) {
 				init_sdl();
 				
 				//Thread for handling sdl events
 				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
 				//Start server
 				pthread_create(&server_t,NULL,init_server,NULL);
-			} else if(mode==MODE_BOT) {
+			} else if(td->mode==MODE_BOT) {
 				//Start thread for forwardning from client->botserver
 				pthread_t tmp_thread_t;
 				pthread_create(&tmp_thread_t,NULL,read_client,td);
 				//Tell client that we are ready to forward data to the server
-				writeln(csock,"ready",sizeof("ready"));
+				writeln(td->csock,"ready",sizeof("ready"));
 				goto parsing_done; //jump to parsing done (to prevent forwarding "mode ok")
 			}
 		}
@@ -251,7 +252,7 @@ void read_server(struct thread_data *td) {
 		/*
 		 * Start GFX mode
 		 */
-		if(mode==MODE_GFX && mode_ok) {
+		if(td->mode==MODE_GFX && mode_ok) {
 			if(CMP_BUFFER(PROT_GFX_CLEAR)) {
 				gfx_clear();
 			} else if(CMP_BUFFER(PROT_GFX_UPDATE)) {
@@ -304,9 +305,9 @@ void read_server(struct thread_data *td) {
 		/*
 		 * Start BOT mode
 		 */
-		if(mode==MODE_BOT && mode_ok) {
+		if(td->mode==MODE_BOT && mode_ok) {
 			//Forward data
-			writeln(csock,data,strlen(data)+1);
+			writeln(td->csock,data,strlen(data)+1);
 		}
 		/*
 		 * End BOT mode
@@ -336,20 +337,24 @@ parsing_done:
 		}
 	}
 
-	printf("Disconnected from server (socket: %i)\n",ssock);
+	printf("Disconnected from server (socket: %i)\n",td->ssock->socket);
 	free(buffer);
-	close(ssock);
-	if(ssock==server_sock)
+
+	if(td->ssock->socket==server_sock)
 		server_sock=0;
 
+	close_socket(td->ssock);
+
+
 	if(td->csock!=0)
-		close(csock);
+		close_socket(td->csock);
 }
 
+/**
+ * Handles communication from the player (and forwards to the robot server)
+ */
 void * read_client(void * data) {
 	struct thread_data *td=(struct thread_data*)data;
-	int csock=td->csock;
-	int ssock=td->ssock;
 
 	char * buffer = calloc(1024,sizeof(int)); //readbuffer
 	bool run=true;
@@ -357,18 +362,18 @@ void * read_client(void * data) {
 	while(run) {
 		int n;
 
-		n=read_data(csock,buffer,1024);
+		n=read_data(td->csock,buffer,1024);
 		if(n<=0) {
 			run=false;
 			break;
 		}
 		//Forward data
-		write_data(ssock,buffer,n);
+		write_data(td->ssock,buffer,n);
 	}
 
-	printf("Disconnected from server (socket: %i)\n",ssock);
-	write_data(ssock,"close",sizeof("close"));
-	close(csock);
+	printf("Disconnected from server (socket: %i)\n",td->ssock->socket);
+	write_data(td->ssock,"close",sizeof("close"));
+	close_socket(td->csock);
 	free(buffer);
 	return 0;
 }
@@ -381,7 +386,6 @@ void * init_server()
      struct sockaddr_in serv_addr, cli_addr;
 	  pthread_attr_t thread_attr;
 	  int one=1;
-	  int server_sock;
 
      server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	  printf("Server socket: %i\n",server_sock);
@@ -414,7 +418,8 @@ void * init_server()
 	  printf("Server is ready\n");
 
 	  while(1) {
-		  listen(server_sock,5);
+		  listen(server_sock,5); //5 is the lenght of the queue for
+		  								 // pending connections
 		  clilen = sizeof(cli_addr);
 		  newserver_sock = accept(server_sock, 
 						  (struct sockaddr *) &cli_addr, 
@@ -437,13 +442,13 @@ void *new_client_thread(void *data) {
 
 	struct thread_data td;
 	td.mode=MODE_BOT;
-	td.csock=sock;
+	td.csock=init_socket(sock,0);
 	td.ssock=init_server_connection(&td);
-	if(td.ssock==0) {
+	if(td.ssock->socket==0) {
 		fprintf(stderr,"Couldn't connect to botserver\n");
 		return NULL;
 	}
-	printf("Client socket: %i\n",client_sock);
+	printf("Client socket: %i\n",client_sock->socket);
 	init_server_communication(&td); //start the connection to the server
 	return NULL;
 }

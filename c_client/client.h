@@ -1,5 +1,8 @@
 #ifndef _CLIENT_H_
 #define _CLIENT_H_
+
+#include "connection.h"
+
 	typedef enum {
 		INIT=0,
 		CONNECTED,
@@ -20,7 +23,7 @@
 
 	struct thread_data {
 		int mode;
-		int csock;
-		int ssock;
+		socket_data * csock;
+		socket_data * ssock;
 	};
 #endif
