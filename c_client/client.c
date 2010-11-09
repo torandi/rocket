@@ -8,6 +8,7 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
@@ -38,7 +39,7 @@ struct thread_data {
 
 int init_server_connection();
 void * init_server_communication(void * data);
-void write(int sock,void * data,int len);
+void write_data(int sock,void * data,int len);
 void writeln(int sock,void * data,int len);
 void read_server(struct thread_data *td);
 void * read_client(void *data);
@@ -78,12 +79,11 @@ int main(int argc,char *argv[])
 
 int init_server_connection(struct thread_data * td)
 {
-	int sockfd, n;
+	int sockfd;
 	struct sockaddr_in serv_addr;
 	struct hostent * server;
 
 	int mode=td->mode;
-	int csock=td->csock;
 
 	int port;
 	if(mode==MODE_GFX)
@@ -130,7 +130,7 @@ int init_server_connection(struct thread_data * td)
 }
 
 /* Sends data through socket */
-void write(int sock,void * data,int len) {
+void write_data(int sock,void * data,int len) {
 	int n = send(sock,data,len,MSG_DONTROUTE);
 
 	if(n<0) {
@@ -168,6 +168,7 @@ void * init_server_communication(void * data) {
 	
 	read_server(td);
 	free(td);
+	return 0;
 }
 
 
@@ -400,22 +401,23 @@ void * read_client(void * data) {
 			break;
 		}
 		//Forward data
-		write(ssock,buffer,n);
+		write_data(ssock,buffer,n);
 	}
 
 	printf("Disconnected from server (socket: %i)\n",ssock);
-	write(ssock,"close",sizeof("close"));
+	write_data(ssock,"close",sizeof("close"));
 	close(csock);
 	free(buffer);
+	return 0;
 }
 
 //inits server for bots
 void * init_server()
 {
-     int newserver_sock, clilen;
+     int newserver_sock;
+	  unsigned int clilen;
      struct sockaddr_in serv_addr, cli_addr;
 	  pthread_attr_t thread_attr;
-     int n;
 	  int one=1;
 	  int server_sock;
 

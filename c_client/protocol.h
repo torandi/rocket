@@ -17,4 +17,4 @@
 #define PROT_SEND_MODE_BOT "mode bot\n"
 
 /* Calculates the authkey from an authcode */
-int protcol_authorize(const char * n);
+int protocol_authorize(const char * n);
