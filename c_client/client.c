@@ -7,6 +7,8 @@
  * ----------------------------------------------------------------------------
  */
 
+#define DEBUG 1
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -33,10 +35,14 @@ void * read_client(void *data);
 void *new_client_thread(void *data);
 void * init_server();
 void * gfx_hndl();
+double get_time();
 
 pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
+double server_time_offset; //The number of seconds we differ from the server
+double max_frame_age=1.0; //The max age of a frame in seconds
+
 
 int main(int argc,char *argv[])
 {
@@ -45,6 +51,7 @@ int main(int argc,char *argv[])
 	td.ssock=init_server_connection(&td);
 	td.csock=0;
 	client_sock=td.ssock;
+
 	if(td.ssock==0) 
 		exit(1);
 
@@ -147,6 +154,7 @@ void read_server(struct thread_data *td) {
 	char * next_write=buffer; //next position in buffer to write to
 	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
 	bool mode_ok=false;
+	bool ignore_frame=false; //Set to true if all data until frame stop should be ignored
 
 	while(run) {
 		int n;
@@ -167,7 +175,17 @@ void read_server(struct thread_data *td) {
 		data=buffer;
 		*next_newline=0;
 
+		double local_time=get_time();
+
+#if DEBUG
 		printf(">>%s\n",data);
+#endif
+
+		if(ignore_frame) {
+			ignore_frame=!CMP_BUFFER(PROT_GFX_FRAME_STOP); //Set to false if 
+																		  //we recieved frame stop
+			goto parsing_done;
+		}
 
 		//cversion
 		if(CMP_BUFFER(PROT_VERSION)) {
@@ -203,7 +221,12 @@ void read_server(struct thread_data *td) {
 						break;
 					}
 				case AUTH_CODE_SENT:
-					if(strcmp(buffer+strlen(PROT_AUTH)+1,"ok")==0) {
+					if(CMP_BUFFER("auth ok")) {
+						double server_time;
+						sscanf(buffer,"auth ok %lf",&server_time);
+						server_time_offset=local_time-server_time;
+						printf("Time: [local:%f, server: %f] \n",local_time,server_time);
+						printf("Time offset to server: %f s\n",server_time_offset);
 						auth_stage=AUTH_DONE;
 					} else {
 						fprintf(stderr,"Authorisation failed\n");
@@ -253,9 +276,20 @@ void read_server(struct thread_data *td) {
 		 * Start GFX mode
 		 */
 		if(td->mode==MODE_GFX && mode_ok) {
-			if(CMP_BUFFER(PROT_GFX_CLEAR)) {
-				gfx_clear();
-			} else if(CMP_BUFFER(PROT_GFX_UPDATE)) {
+			if(CMP_BUFFER(PROT_GFX_FRAME_START)) {
+				double server_time;
+				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
+				server_time+=server_time_offset;
+				if(local_time-server_time<max_frame_age) {
+					gfx_clear();
+				} else {
+#if DEBUG
+					printf("Dropping frame! %lf s old.\n",local_time-server_time);
+#endif
+					ignore_frame=true;			
+					goto parsing_done;
+				}
+			} else if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
 				gfx_update();
 			} else if(CMP_BUFFER(PROT_GFX_SHIP)) {
 				char nick[32];
@@ -266,10 +300,12 @@ void read_server(struct thread_data *td) {
 				attr_org=attr_str; //save a pointer to orginal allocated memory
 				bzero(attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
 				
-				int n=sscanf(buffer,"ship %s %i %i %i %s",nick,&x,&y,&a,attr_str);
+				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,nick,&x,&y,&a,attr_str);
 				if(n>=4) {
 					if(n==5) {
+#if DEBUG
 						printf("Attr: %s\n",attr_str);
+#endif
 						//Got attributes
 						char cur_attr[32];
 						int pos;
@@ -280,7 +316,9 @@ void read_server(struct thread_data *td) {
 								cur_attr[pos++]=*(attr_str++);
 							if(*attr_str!=0)
 								++attr_str;
+#if DEBUG
 							printf("Found attr: %s\n",cur_attr);
+#endif
 							if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
 								attr[GFX_ATTR_SHOOT]=true;
 							} else if(strcmp(cur_attr,PROT_GFX_ATTR_BOOST)==0) {
@@ -463,4 +501,10 @@ void * gfx_hndl() {
 		}
 		usleep(100);
 	}
+}
+
+double get_time() {
+	struct timeval t;
+	gettimeofday(&t,0);
+	return t.tv_sec + (t.tv_usec/1000000.0);
 }

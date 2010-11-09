@@ -6,9 +6,11 @@
 #define PROT_VERSION "cversion"
 #define PROT_MODE_OK "mode ok"
 
-#define PROT_GFX_CLEAR "clear"
-#define PROT_GFX_UPDATE "update"
+#define PROT_GFX_FRAME_START "frame start"
+#define PROT_GFX_FRAME_START_TIME "frame start %lf"
+#define PROT_GFX_FRAME_STOP "frame stop"
 #define PROT_GFX_SHIP "ship"
+#define PROT_GFX_SHIP_DATA "ship %s %i %i %i %s"
 
 #define PROT_GFX_ATTR_SHOOT "shoot"
 #define PROT_GFX_ATTR_BOOST "boost"

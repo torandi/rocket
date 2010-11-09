@@ -12,4 +12,4 @@ connection.o: connection.c connection.h
 	cc ${LDFLAGS} -c -o connection.o connection.c
 
 clean:
-	rm protocol.o client.o gfx.o client
+	rm protocol.o client.o gfx.o connection.o client 
