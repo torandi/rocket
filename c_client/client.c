@@ -47,6 +47,8 @@ double max_frame_age=2.0; //The max age of a frame in seconds
 
 int main(int argc,char *argv[])
 {
+	//init_ssl();
+
 	struct thread_data td;
 	td.mode=MODE_GFX;
 	td.ssock=init_server_connection(&td);
