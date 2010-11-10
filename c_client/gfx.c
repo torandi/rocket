@@ -33,6 +33,7 @@ SDL_Rect	screen_area;
 TTF_Font * font;
 SDL_Surface * ship,*ship_boost;
 SDL_Color font_color={0xFF,0xFF,0xFF};
+bool active=false;
 
 void slock();
 void sulock();
@@ -101,6 +102,8 @@ int init_sdl() {
 	}
 	ship_boost=SDL_DisplayFormatAlpha(tmp);
 	SDL_FreeSurface(tmp);
+	
+	active=true;
 
 	return 0;
 }
@@ -135,6 +138,8 @@ int hndl_sdl_events() {
  * Draws a ship at (x,y) directed at angle a (in degrees). 
  */
 void draw_ship(char nick[32],int x, int y, int a,bool attr[NUM_GFX_ATTR]) {
+	if(!active) return;
+
 	Uint32 color = 0xFFFFFFFF;
 	SDL_Surface * cur_ship=ship;
 	SDL_Rect text_rect,ship_pos;
@@ -170,14 +175,18 @@ void draw_ship(char nick[32],int x, int y, int a,bool attr[NUM_GFX_ATTR]) {
 }
 
 void gfx_update() {
+	if(!active) return;
 	SDL_UpdateRect(screen,0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
 }
 
 void gfx_clear() {
+	if(!active) return;
 	SDL_FillRect(screen,&screen_area,0x00);
 }
 
 void quit_sdl() {
+	if(!active) return;
+	active=false;
 	SDL_Quit();
 }
 
@@ -193,6 +202,7 @@ double degrees_to_radians(int d) {
 
 void slock()
 {
+	if(!active) return;
 	if ( SDL_MUSTLOCK(screen) )
 	{
 		if ( SDL_LockSurface(screen) < 0 )
@@ -204,6 +214,7 @@ void slock()
 
 void sulock()
 {
+	if(!active) return;
 	if ( SDL_MUSTLOCK(screen) )
 	{
 		SDL_UnlockSurface(screen);

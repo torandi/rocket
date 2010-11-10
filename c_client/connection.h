@@ -9,8 +9,8 @@
 #define CLIENT_PORT 4710 //Port that bots will connect to localy
 
 //#define SERVER_HOSTNAME "192.168.0.5"
-//#define SERVER_HOSTNAME "localhost"
-#define SERVER_HOSTNAME "10.0.0.104"
+#define SERVER_HOSTNAME "localhost"
+//#define SERVER_HOSTNAME "10.0.0.104"
 
 typedef struct socket_data {
 	int socket;
