@@ -5,7 +5,7 @@
 //#include "ssl.h"
 
 #define SERVER_GFX_PORT 4711 //Port on botserver for gfx
-#define SERVER_BOT_PORT 4712 //Port on botserver for bots
+#define SERVER_BOT_PORT 4711 //Port on botserver for bots
 #define CLIENT_PORT 4710 //Port that bots will connect to localy
 
 //#define SERVER_HOSTNAME "192.168.0.5"
