@@ -3,7 +3,9 @@
 LISTEN_PORT = 4711
 
 require 'socket'
-require 'map'
+require 'yaml'
+require 'item'
+require 'ship'
 require 'rkt_display'
 require 'rkt_robot'
 
@@ -148,7 +150,21 @@ class RubyServer
 
 end
 
+# Create world
+$items = Array.new
+
+nsg = RocketShip.new("nsg", 300, 200)
+nsg.boost = true
+nsg.angle = 45
+$items.push nsg
+
+torandi = RocketShip.new("torandi", 300, 200)
+torandi.boost = true
+torandi.angle = 100
+$items.push torandi
+
 # Start everything
-$world = RocketWorld.new 640, 480
 server = RubyServer.new
 server.open_server
+
+

@@ -13,5 +13,9 @@ class RocketWorld
   def get x, y
     @world[x][y]
   end
+  
+  def content? x, y
+    @world[x][y] != nil or not @world[x][y].empty?
+  end
 
 end

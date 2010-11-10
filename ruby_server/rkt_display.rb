@@ -6,23 +6,28 @@ class RktDisplay
 	end
 	
 	def send str
-	  @c.puts str
 	  puts "RktDisplay: #{str}"
+	  @c.puts str
 	end
 	
 	def run line
 		i = 10
 		v = 0
 		loop do
+
 		  frame_time = "%10.6f" % (Time.now).to_f
 			send "frame start #{frame_time}"
-			send "ship nsg #{i} 100 #{v} shoot"
-			send "ship torandi #{600-i} 200 #{180-v} boost,shoot"
+
+      $items.each do |item|
+        item.run
+        send "#{item.item} #{item.name} #{item.x} #{item.y} #{item.angle} #{item.action}"
+      end
+
 			send "frame stop"
-			sleep 0.05
-			
+			sleep 0.01
+
 			i = i + 1
-			v = v + 1
+			v = v - 1
 		end
 	end
 
