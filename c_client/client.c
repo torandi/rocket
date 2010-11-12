@@ -291,9 +291,9 @@ void read_server(struct thread_data *td) {
 				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
 				double age=local_time-(server_time+server_time_offset);
 				if(age<max_frame_age) {
-//#if VERBOSE
+#if VERBOSE
 					printf("Frame age: %lf s\n",age);
-//#endif
+#endif
 					gfx_clear();
 					ignored_frames=0;
 				} else {
