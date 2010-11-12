@@ -33,6 +33,9 @@
 //If more than this number of frames are dropped, resync offset
 #define MAX_IGNORED_FRAMES 10
 
+#define BUFFER_SIZE 2048
+#define READ_SIZE 1024
+
 socket_data * init_server_connection(struct thread_data * data);
 void * init_server_communication(void * data);
 void read_server(struct thread_data *td);
@@ -152,7 +155,7 @@ void * init_server_communication(void * data) {
  * Handles communication with the robot server
  */
 void read_server(struct thread_data *td) {
-	char * buffer = calloc(1024,sizeof(int)); //readbuffer
+	char * buffer = calloc(BUFFER_SIZE,sizeof(int)); //readbuffer
 	char * buffer2 = NULL; //readbuffer
 	char * data=NULL; //data to parse
 	char * next_newline=NULL;
@@ -169,7 +172,7 @@ void read_server(struct thread_data *td) {
 
 
 		while(next_newline==NULL) {
-			n=read_data(td->ssock,next_write,1024);
+			n=read_data(td->ssock,next_write,READ_SIZE);
 			if(n<=0) {
 				run=false;
 				break;
@@ -181,6 +184,7 @@ void read_server(struct thread_data *td) {
 			break;
 		
 		data=buffer;
+		//Set the char at next_newline to \0
 		*next_newline=0;
 
 		if(ignore_frame) {
@@ -387,7 +391,7 @@ parsing_done:
 		//If next_write>next_newline there is remaining data in the buffer
 		if(next_write>next_newline) {
 			//keep remaining data in buffer
-			buffer2=calloc(1024,sizeof(int));
+			buffer2=calloc(BUFFER_SIZE,sizeof(int));
 			memcpy(buffer2,next_newline,next_write-next_newline);
 			free(buffer);
 			buffer=buffer2;
