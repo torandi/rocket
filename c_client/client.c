@@ -20,6 +20,7 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <limits.h>
 
 #include "connection.h"
 #include "client.h"
@@ -28,6 +29,9 @@
 #include "protocol.h"
 
 #define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
+
+//If more than this number of frames are dropped, resync offset
+#define MAX_IGNORED_FRAMES 10
 
 socket_data * init_server_connection(struct thread_data * data);
 void * init_server_communication(void * data);
@@ -41,8 +45,7 @@ double get_time();
 pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
-double server_time_offset; //The number of seconds we differ from the server
-double max_frame_age=2.0; //The max age of a frame in seconds
+const double max_frame_age=0.5; //The max age of a frame in seconds
 
 
 int main(int argc,char *argv[])
@@ -63,7 +66,7 @@ int main(int argc,char *argv[])
 	memcpy(data,&td,sizeof(td));
 	pthread_create(&client_t,NULL,init_server_communication,data);
 	//Make sure the sockets is closed on exit
-	atexit(&close_sockets);
+	atexit(&terminate_sockets);
 
 	//If the main thread exits using pthread_exit, the other will keep running
 	pthread_exit(NULL);
@@ -157,7 +160,9 @@ void read_server(struct thread_data *td) {
 	char * next_write=buffer; //next position in buffer to write to
 	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
 	bool mode_ok=false;
-	bool ignore_frame=false; //Set to true if all data until frame stop should be ignored
+	bool ignore_frame=false;
+	int ignored_frames=0; //count the number of ignored frames
+	double server_time_offset; //The number of seconds we differ from the server
 
 	while(run) {
 		int n;
@@ -178,20 +183,21 @@ void read_server(struct thread_data *td) {
 		data=buffer;
 		*next_newline=0;
 
+		if(ignore_frame) {
+			if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
+				ignore_frame=false;
+			} else {
+				//Drop buffer
+				next_write=NULL;
+			}
+			goto parsing_done;
+		}
+
 		double local_time=get_time();
 
 #if VERBOSE
 		printf(">>%s\n",data);
 #endif
-
-		if(ignore_frame) {
-#if DEBUG
-			printf("DROP!\n");
-#endif
-			ignore_frame=!CMP_BUFFER(PROT_GFX_FRAME_STOP); //Set to false if 
-																		  //we recieved frame stop
-			goto parsing_done;
-		}
 
 		//cversion
 		if(CMP_BUFFER(PROT_VERSION)) {
@@ -227,11 +233,10 @@ void read_server(struct thread_data *td) {
 						break;
 					}
 				case AUTH_CODE_SENT:
-					if(CMP_BUFFER("auth ok")) {
+					if(CMP_BUFFER(PROT_AUTH_OK)) {
 						double server_time;
 						sscanf(buffer,"auth ok %lf",&server_time);
 						server_time_offset=local_time-server_time;
-						printf("Time: [local:%f, server: %f] \n",local_time,server_time);
 						printf("Time offset to server: %f s\n",server_time_offset);
 						auth_stage=AUTH_DONE;
 					} else {
@@ -258,12 +263,11 @@ void read_server(struct thread_data *td) {
 				}
 			}
 		} else if(CMP_BUFFER(PROT_MODE_OK)) {
-			printf("mode accepted\n");
+			printf("mode accepted (%i)\n",td->mode);
 			mode_ok=true;
 			//if gfx mode, start sdl
 			if(td->mode==MODE_GFX) {
 				init_sdl();
-				
 				//Thread for handling sdl events
 				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
 				//Start server
@@ -287,12 +291,29 @@ void read_server(struct thread_data *td) {
 				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
 				double age=local_time-(server_time+server_time_offset);
 				if(age<max_frame_age) {
+//#if VERBOSE
+					printf("Frame age: %lf s\n",age);
+//#endif
 					gfx_clear();
+					ignored_frames=0;
 				} else {
-#if DEBUG
+
+					#if DEBUG
 					printf("Dropping frame! %lf s old.\n",age);
 #endif
-					ignore_frame=true;			
+					//Drop data in buffer
+					next_write=NULL;
+					//Ignore frame
+					ignore_frame=true;
+
+					++ignored_frames;
+
+					if(ignored_frames>MAX_IGNORED_FRAMES) {
+						//Resync!
+						ignored_frames=0;
+						server_time_offset=age;
+						printf("Resynced offset to server. New offset: %lf s\n",age);
+					}
 					goto parsing_done;
 				}
 			} else if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
@@ -473,8 +494,8 @@ void * init_server()
 				 continue;
 		  }
 		pthread_t tmp_client_t;
-		void * data=malloc(sizeof(newserver_sock));
-		memcpy(data,&newserver_sock,sizeof(newserver_sock));
+		void * data=malloc(sizeof(int));
+		memcpy(data,&newserver_sock,sizeof(int));
 		pthread_create(&tmp_client_t,&thread_attr,new_client_thread,data);
 	}
 }
@@ -488,12 +509,14 @@ void *new_client_thread(void *data) {
 	td.mode=MODE_BOT;
 	td.csock=init_socket(sock,0);
 	td.ssock=init_server_connection(&td);
-	if(td.ssock->socket==0) {
+	if(td.ssock==0) {
 		fprintf(stderr,"Couldn't connect to botserver\n");
 		return NULL;
 	}
 	printf("Client socket: %i\n",client_sock->socket);
-	init_server_communication(&td); //start the connection to the server
+	data=malloc(sizeof(td));
+	memcpy(data,&td,sizeof(td));
+	init_server_communication(data); //start the connection to the server
 	return NULL;
 }
 

@@ -5,12 +5,18 @@
 #include <unistd.h>
 #include <string.h>
 
-void close_sockets() {
+/**
+ * Stop all sockets
+ */
+void terminate_sockets() {
 	if(server_sock!=0)
 		close(server_sock);
 	close_socket(client_sock);
 }
 
+/**
+ * Stop a single socket
+ */
 void close_socket(socket_data * sock) {
 	close(sock->socket);
 	free(sock);
@@ -43,6 +49,6 @@ void writeln(const socket_data * sock,const void * data,int len) {
 	free(senddata);	
 }
 
-int read_data(const socket_data * sock,void * data,int len) {
+int read_data(const socket_data * sock,void * data,size_t len) {
 	return read(sock->socket,data,len);
 }

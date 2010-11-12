@@ -3,6 +3,7 @@
 #define VERSION "0.1"
 
 #define PROT_AUTH "auth"
+#define PROT_AUTH_OK "auth ok"
 #define PROT_VERSION "cversion"
 #define PROT_MODE_OK "mode ok"
 

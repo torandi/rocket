@@ -26,10 +26,17 @@ room
 auth 4774 <-- alltid 4 tecken
 
 > auth ( n * n[1] ) + ( n[3] * 5 ) // Nollindexering!
-auth ok
+auth ok [timestamp]
 
 >auth (fel-kod)
 auth no
+
+#Vid mode gfx:
+>ready
+#servern börjar skickar data
+
+>wait
+#servern slutar skicka data en liten stund
 
 > scan
 scan 45.78 34.98

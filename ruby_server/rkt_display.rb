@@ -15,7 +15,7 @@ class RktDisplay
 		v = 0
 		loop do
 
-		  frame_time = "%10.6f" % (Time.now).to_f
+			frame_time = "%10.6f" % (Time.now).to_f
 			send "frame start #{frame_time}"
 
       $items.each do |item|

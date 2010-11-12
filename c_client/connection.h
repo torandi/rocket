@@ -2,6 +2,7 @@
 #define CONNECTION_H_
 
 #include "common.h"
+#include <stddef.h>
 //#include "ssl.h"
 
 #define SERVER_GFX_PORT 4711 //Port on botserver for gfx
@@ -22,7 +23,7 @@ void write_data(const socket_data * sock,const void * data,int len);
 void writeln(const socket_data * sock,const void * data,int len);
 
 //reads len bytes from socket to data. Returns number of bytes read
-int read_data(const socket_data * sock,void * data,int len);
+int read_data(const socket_data * sock,void * data,size_t len);
 
 /** 
  * Initialises a connection (and creates a socket struct)
@@ -33,8 +34,8 @@ socket_data * init_socket(int sock,bool ssl);
 //Close and deallocate a socket
 void close_socket(socket_data * sock);
 
-//Closes the sockets
-void close_sockets();
+//Stops all sockets
+void terminate_sockets();
 
 int server_sock; //Socket listening for new connections
 socket_data * client_sock; //Socket connected to server
