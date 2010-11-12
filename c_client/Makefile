@@ -5,7 +5,9 @@ all: client
 
 client: protocol.o client.o gfx.o connection.o
 
-gfx.o: gfx.c
+client.o: client.c connection.h gfx.h 
+
+gfx.o: gfx.c gfx.h
 	cc ${LDFLAGS} -c -o gfx.o gfx.c
 
 connection.o: connection.c connection.h

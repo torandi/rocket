@@ -7,8 +7,8 @@
  * ----------------------------------------------------------------------------
  */
 
-#define DEBUG 1
-#define VERBOSE 0
+//Verbose level: 0: nothing, 1: something 2-9: some more 10: All + all input/output from socket
+#define VERBOSE 2
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -30,8 +30,8 @@
 
 #define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
 
-//If more than this number of frames are dropped, resync offset
-#define MAX_IGNORED_FRAMES 10
+//If more than this number of frames are dropped or negative, resync offset
+#define MAX_WRONG_FRAMES 10
 
 #define BUFFER_SIZE 2048
 #define READ_SIZE 1024
@@ -163,9 +163,10 @@ void read_server(struct thread_data *td) {
 	char * next_write=buffer; //next position in buffer to write to
 	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
 	bool mode_ok=false;
-	bool ignore_frame=false;
-	int ignored_frames=0; //count the number of ignored frames
 	double server_time_offset; //The number of seconds we differ from the server
+
+	int ignored_frames=0; //count the number of ignored frames
+	int num_neg_frames=0; //Number of frames with negative age
 
 	while(run) {
 		int n;
@@ -187,21 +188,12 @@ void read_server(struct thread_data *td) {
 		//Set the char at next_newline to \0
 		*next_newline=0;
 
-		if(ignore_frame) {
-			if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
-				ignore_frame=false;
-			} else {
-				//Drop buffer
-				next_write=NULL;
-			}
-			goto parsing_done;
-		}
+#if VERBOSE >= 10
+		printf(">>%s\n",data);
+#endif
 
 		double local_time=get_time();
 
-#if VERBOSE
-		printf(">>%s\n",data);
-#endif
 
 		//cversion
 		if(CMP_BUFFER(PROT_VERSION)) {
@@ -295,28 +287,39 @@ void read_server(struct thread_data *td) {
 				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
 				double age=local_time-(server_time+server_time_offset);
 				if(age<max_frame_age) {
-#if VERBOSE
+#if VERBOSE >= 3
 					printf("Frame age: %lf s\n",age);
 #endif
 					gfx_clear();
 					ignored_frames=0;
+					if(age<-0.1) { //Negative age
+						if(++num_neg_frames>MAX_WRONG_FRAMES) {
+							num_neg_frames=0;
+							age=local_time-server_time;
+							server_time_offset=age;
+#if VERBOSE >= 1
+							printf("Resynced offset to server (neg). New offset: %lf s\n",age);
+#endif
+						}
+					} else {
+						num_neg_frames=0;
+					}
 				} else {
 
-					#if DEBUG
+#if VERBOSE >= 1 
 					printf("Dropping frame! %lf s old.\n",age);
 #endif
 					//Drop data in buffer
 					next_write=NULL;
-					//Ignore frame
-					ignore_frame=true;
 
-					++ignored_frames;
-
-					if(ignored_frames>MAX_IGNORED_FRAMES) {
+					if(++ignored_frames>MAX_WRONG_FRAMES) {
 						//Resync!
+						age=local_time-server_time;
 						ignored_frames=0;
 						server_time_offset=age;
+#if VERBOSE >= 1
 						printf("Resynced offset to server. New offset: %lf s\n",age);
+#endif
 					}
 					goto parsing_done;
 				}
@@ -334,7 +337,7 @@ void read_server(struct thread_data *td) {
 				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,nick,&x,&y,&a,attr_str);
 				if(n>=4) {
 					if(n==5) {
-#if VERBOSE
+#if VERBOSE >= 4
 						printf("Attr: %s\n",attr_str);
 #endif
 						//Got attributes
@@ -347,7 +350,7 @@ void read_server(struct thread_data *td) {
 								cur_attr[pos++]=*(attr_str++);
 							if(*attr_str!=0)
 								++attr_str;
-#if VERBOSE
+#if VERBOSE >= 4
 							printf("Found attr: %s\n",cur_attr);
 #endif
 							if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
