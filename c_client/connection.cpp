@@ -42,7 +42,7 @@ void write_data(const socket_data * sock,const void * data,int len) {
 
 /* Sends data through socket with newline*/
 void writeln(const socket_data * sock,const void * data,int len) {
-	char * senddata = malloc(len);
+	char * senddata = (char*)malloc(len);
 	memcpy(senddata,data,len-1);
 	senddata[len-1]=0xA; //newline
 	write_data(sock,senddata,len); //Send the data

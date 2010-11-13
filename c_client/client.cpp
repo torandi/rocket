@@ -1,14 +1,5 @@
-/*
- * ----------------------------------------------------------------------------
- * "THE BEER-WARE LICENSE" (Revision 42):
- * <torandi@gmail.com> wrote this file. As long as you retain this notice you
- * can do whatever you want with this stuff. If we meet some day, and you think
- * this stuff is worth it, you can buy me a beer in return.
- * ----------------------------------------------------------------------------
- */
-
 //Verbose level: 0: nothing, 1: something 2-9: some more 10: All + all input/output from socket
-#define VERBOSE 2
+#define VERBOSE 4
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,15 +9,17 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <limits.h>
+#include <vector>
 
 #include "connection.h"
 #include "client.h"
 #include "gfx.h"
-#include "common.h"
 #include "protocol.h"
+#include "ship.h"
 
 #define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
 
@@ -41,8 +34,8 @@ void * init_server_communication(void * data);
 void read_server(struct thread_data *td);
 void * read_client(void *data);
 void *new_client_thread(void *data);
-void * init_server();
-void * gfx_hndl();
+void * init_server(void * data);
+void * gfx_hndl(void * data);
 double get_time();
 
 pthread_t sdl_event_t;
@@ -50,11 +43,13 @@ pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
 const double max_frame_age=0.5; //The max age of a frame in seconds
 
+int server_sock; //Socket listening for new connections
+socket_data * client_sock; //Socket connected to server
+
+std::vector<ship_t> ships;
 
 int main(int argc,char *argv[])
 {
-	//init_ssl();
-
 	struct thread_data td;
 	td.mode=MODE_GFX;
 	td.ssock=init_server_connection(&td);
@@ -64,7 +59,9 @@ int main(int argc,char *argv[])
 	if(td.ssock==0) 
 		exit(1);
 
+#if VERBOSE>=1
 	printf("GFX socket: %i\n",client_sock->socket);
+#endif
 	void * data = malloc(sizeof(td));
 	memcpy(data,&td,sizeof(td));
 	pthread_create(&client_t,NULL,init_server_communication,data);
@@ -134,7 +131,7 @@ socket_data * init_server_connection(struct thread_data * td)
 void * init_server_communication(void * data) {
 	char buffer[50];
 	int len;
-	struct thread_data * td=malloc(sizeof(struct thread_data));
+	thread_data * td=(thread_data*) malloc(sizeof(struct thread_data));
 	memcpy(td,data,sizeof(struct thread_data));
 	free(data);
 
@@ -155,7 +152,7 @@ void * init_server_communication(void * data) {
  * Handles communication with the robot server
  */
 void read_server(struct thread_data *td) {
-	char * buffer = calloc(BUFFER_SIZE,sizeof(int)); //readbuffer
+	char * buffer = (char*) calloc(BUFFER_SIZE,sizeof(int)); //readbuffer
 	char * buffer2 = NULL; //readbuffer
 	char * data=NULL; //data to parse
 	char * next_newline=NULL;
@@ -164,6 +161,8 @@ void read_server(struct thread_data *td) {
 	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
 	bool mode_ok=false;
 	double server_time_offset; //The number of seconds we differ from the server
+
+	std::vector<ship_t> frame;
 
 	int ignored_frames=0; //count the number of ignored frames
 	int num_neg_frames=0; //Number of frames with negative age
@@ -248,6 +247,7 @@ void read_server(struct thread_data *td) {
 			if(auth_stage==AUTH_DONE) {
 				switch(td->mode) {
 					case MODE_GFX:
+						init_sdl();
 						writeln(td->ssock,PROT_SEND_MODE_DISPLAY,sizeof(PROT_SEND_MODE_DISPLAY));
 						break;
 					case MODE_BOT:
@@ -263,7 +263,6 @@ void read_server(struct thread_data *td) {
 			mode_ok=true;
 			//if gfx mode, start sdl
 			if(td->mode==MODE_GFX) {
-				init_sdl();
 				//Thread for handling sdl events
 				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
 				//Start server
@@ -273,6 +272,9 @@ void read_server(struct thread_data *td) {
 				pthread_t tmp_thread_t;
 				pthread_create(&tmp_thread_t,NULL,read_client,td);
 				//Tell client that we are ready to forward data to the server
+#if VERBOSE >= 2
+				printf("Bot socket ready\n");
+#endif
 				writeln(td->csock,"ready",sizeof("ready"));
 				goto parsing_done; //jump to parsing done (to prevent forwarding "mode ok")
 			}
@@ -287,10 +289,10 @@ void read_server(struct thread_data *td) {
 				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
 				double age=local_time-(server_time+server_time_offset);
 				if(age<max_frame_age) {
-#if VERBOSE >= 3
+#if VERBOSE >= 9
 					printf("Frame age: %lf s\n",age);
 #endif
-					gfx_clear();
+					frame.clear();
 					ignored_frames=0;
 					if(age<-0.1) { //Negative age
 						if(++num_neg_frames>MAX_WRONG_FRAMES) {
@@ -324,17 +326,15 @@ void read_server(struct thread_data *td) {
 					goto parsing_done;
 				}
 			} else if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
-				gfx_update();
+				ships=frame;
 			} else if(CMP_BUFFER(PROT_GFX_SHIP)) {
-				char nick[32];
-				bool attr[NUM_GFX_ATTR];
-				int x, y, a;
+				ship_t ship;
 				void * attr_org;
-				char * attr_str=malloc(128);
+				char * attr_str=(char*)malloc(128);
 				attr_org=attr_str; //save a pointer to orginal allocated memory
-				bzero(attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
+				bzero(ship.attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
 				
-				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,nick,&x,&y,&a,attr_str);
+				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,attr_str);
 				if(n>=4) {
 					if(n==5) {
 #if VERBOSE >= 4
@@ -354,15 +354,15 @@ void read_server(struct thread_data *td) {
 							printf("Found attr: %s\n",cur_attr);
 #endif
 							if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
-								attr[GFX_ATTR_SHOOT]=true;
+								ship.attr[GFX_ATTR_SHOOT]=true;
 							} else if(strcmp(cur_attr,PROT_GFX_ATTR_BOOST)==0) {
-								attr[GFX_ATTR_BOOST]=true;
+								ship.attr[GFX_ATTR_BOOST]=true;
 							} else {
 								fprintf(stderr,"Got unknown attribute %s\n",cur_attr);
 							}
 						}
 					}
-					draw_ship(nick,x,y,a,attr);
+					frame.push_back(ship);
 					free(attr_org);
 				} else {
 					fprintf(stderr,"Invalid data from gfx server\n");
@@ -394,7 +394,7 @@ parsing_done:
 		//If next_write>next_newline there is remaining data in the buffer
 		if(next_write>next_newline) {
 			//keep remaining data in buffer
-			buffer2=calloc(BUFFER_SIZE,sizeof(int));
+			buffer2=(char*)calloc(BUFFER_SIZE,sizeof(int));
 			memcpy(buffer2,next_newline,next_write-next_newline);
 			free(buffer);
 			buffer=buffer2;
@@ -403,13 +403,15 @@ parsing_done:
 			//printf("Moved around in buffer, is now: %s\n",buffer); 
 		} else {
 			free(buffer);
-			buffer=calloc(1024,sizeof(int));
+			buffer=(char*)calloc(1024,sizeof(int));
 			next_write=buffer;
 			next_newline=NULL;
 		}
 	}
 
+#if VERBOSE>=1
 	printf("Disconnected from server (socket: %i)\n",td->ssock->socket);
+#endif
 	free(buffer);
 
 	if(td->ssock->socket==server_sock)
@@ -428,7 +430,7 @@ parsing_done:
 void * read_client(void * data) {
 	struct thread_data *td=(struct thread_data*)data;
 
-	char * buffer = calloc(1024,sizeof(int)); //readbuffer
+	char * buffer = (char*)calloc(1024,sizeof(int)); //readbuffer
 	bool run=true;
 
 	while(run) {
@@ -440,6 +442,9 @@ void * read_client(void * data) {
 			break;
 		}
 		//Forward data
+#if VERBOSE >= 8
+		printf("Forwarded: %s\n",buffer);
+#endif
 		write_data(td->ssock,buffer,n);
 	}
 
@@ -451,7 +456,7 @@ void * read_client(void * data) {
 }
 
 //inits server for bots
-void * init_server()
+void * init_server(void * data)
 {
      int newserver_sock;
 	  unsigned int clilen;
@@ -460,12 +465,16 @@ void * init_server()
 	  int one=1;
 
      server_sock = socket(AF_INET, SOCK_STREAM, 0);
+#if VERBOSE >= 1
 	  printf("Server socket: %i\n",server_sock);
+#endif
 
 	  
 	  setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR,&one,sizeof(one));
 
+#if VERBOSE >= 1
 	  printf("Initializing server...\n");
+#endif
 	  
 
      if (server_sock < 0) {
@@ -487,7 +496,9 @@ void * init_server()
 	  pthread_attr_init(&thread_attr);
 	  pthread_attr_setdetachstate(&thread_attr,PTHREAD_CREATE_DETACHED);
 
+#if VERBOSE >= 1
 	  printf("Server is ready\n");
+#endif
 
 	  while(1) {
 		  listen(server_sock,5); //5 is the lenght of the queue for
@@ -520,22 +531,35 @@ void *new_client_thread(void *data) {
 		fprintf(stderr,"Couldn't connect to botserver\n");
 		return NULL;
 	}
+#if VERBOSE >= 1
 	printf("Client socket: %i\n",client_sock->socket);
+#endif
 	data=malloc(sizeof(td));
 	memcpy(data,&td,sizeof(td));
 	init_server_communication(data); //start the connection to the server
 	return NULL;
 }
 
+void update_gfx() {
+	gfx_clear();
+	std::vector<ship_t>::iterator it;
+	for(it=ships.begin();it!=ships.end();++it) {
+		draw_ship(it->nick,it->x,it->y,it->a,it->attr);
+	}
+	gfx_update();
+}
+
 /*
  * handles the sdl windows and closes it if necesary
+ * Also handles the interpolation
  */
-void * gfx_hndl() {
+void * gfx_hndl(void * data) {
 	while(1) {
+		update_gfx();
 		if(hndl_sdl_events()!=0){
 			exit(0);
 		}
-		usleep(100);
+		usleep(50);
 	}
 }
 

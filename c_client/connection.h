@@ -1,7 +1,6 @@
 #ifndef CONNECTION_H_
 #define CONNECTION_H_
 
-#include "common.h"
 #include <stddef.h>
 //#include "ssl.h"
 
@@ -10,8 +9,8 @@
 #define CLIENT_PORT 4710 //Port that bots will connect to localy
 
 //#define SERVER_HOSTNAME "192.168.0.5"
-#define SERVER_HOSTNAME "localhost"
-//#define SERVER_HOSTNAME "10.0.0.104"
+//#define SERVER_HOSTNAME "localhost"
+#define SERVER_HOSTNAME "10.0.0.108"
 //#define SERVER_HOSTNAME "10.0.0.2"
 
 typedef struct socket_data {
@@ -38,7 +37,6 @@ void close_socket(socket_data * sock);
 //Stops all sockets
 void terminate_sockets();
 
-int server_sock; //Socket listening for new connections
-socket_data * client_sock; //Socket connected to server
-
+extern int server_sock; //Socket listening for new connections
+extern socket_data * client_sock; //Socket connected to server
 #endif

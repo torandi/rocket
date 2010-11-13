@@ -7,7 +7,6 @@
 #include <SDL/SDL_gfxPrimitives.h>
 
 #include "gfx.h"
-#include "common.h"
 
 #define SCREEN_WIDTH  640 // width of the screen, in pixels
 #define SCREEN_HEIGHT 480 // height of the screen, in pixels
@@ -34,11 +33,13 @@ TTF_Font * font;
 SDL_Surface * ship,*ship_boost;
 SDL_Color font_color={0xFF,0xFF,0xFF};
 bool active=false;
+bool highscore=false;
 
 void slock();
 void sulock();
 int radians_to_degrees(double rad);
 double degrees_to_radians(int d);
+
 TTF_Font* loadfont(char* file, int ptsize);
 
 /*
@@ -130,6 +131,9 @@ int hndl_sdl_events() {
 			quit_sdl();
 			return 1;	
 		}
+		if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_h) {
+			toggle_highscore();	
+		}
 	} // while (handling events)
 	return 0;
 }
@@ -174,6 +178,10 @@ void draw_ship(char nick[32],int x, int y, int a,bool attr[NUM_GFX_ATTR]) {
 	sulock();
 }
 
+void draw_highscore() {
+
+}
+
 void gfx_update() {
 	if(!active) return;
 	SDL_UpdateRect(screen,0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
@@ -188,6 +196,16 @@ void quit_sdl() {
 	if(!active) return;
 	active=false;
 	SDL_Quit();
+}
+
+void toggle_highscore() {
+	if(active) {
+		if(!highscore) {
+			//request_highscore();
+		} else {
+			highscore=false;
+		}
+	}
 }
 
 //internal functions
