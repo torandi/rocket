@@ -247,7 +247,6 @@ void read_server(struct thread_data *td) {
 			if(auth_stage==AUTH_DONE) {
 				switch(td->mode) {
 					case MODE_GFX:
-						init_sdl();
 						writeln(td->ssock,PROT_SEND_MODE_DISPLAY,sizeof(PROT_SEND_MODE_DISPLAY));
 						break;
 					case MODE_BOT:
@@ -263,6 +262,10 @@ void read_server(struct thread_data *td) {
 			mode_ok=true;
 			//if gfx mode, start sdl
 			if(td->mode==MODE_GFX) {
+				int screen_width,screen_heigth;
+				sscanf(buffer,PROT_MODE_OK_GFX,&screen_width,&screen_heigth);
+				//init sdl
+				init_sdl(screen_width,screen_heigth);
 				//Thread for handling sdl events
 				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
 				//Start server
@@ -275,7 +278,7 @@ void read_server(struct thread_data *td) {
 #if VERBOSE >= 2
 				printf("Bot socket ready\n");
 #endif
-				writeln(td->csock,"ready",sizeof("ready"));
+				writeln(td->csock,PROT_BOT_READY,sizeof(PROT_BOT_READY));
 				goto parsing_done; //jump to parsing done (to prevent forwarding "mode ok")
 			}
 		}

@@ -6,6 +6,7 @@
 #define PROT_AUTH_OK "auth ok"
 #define PROT_VERSION "cversion"
 #define PROT_MODE_OK "mode ok"
+#define PROT_MODE_OK_GFX "mode ok %i %i"
 
 #define PROT_GFX_FRAME_START "frame start"
 #define PROT_GFX_FRAME_START_TIME "frame start %lf"
@@ -18,6 +19,8 @@
 
 #define PROT_SEND_MODE_DISPLAY "mode display\n"
 #define PROT_SEND_MODE_BOT "mode bot\n"
+
+#define PROT_BOT_READY "ready"
 
 /* Calculates the authkey from an authcode */
 int protocol_authorize(const char * n);

@@ -8,9 +8,6 @@
 
 #include "gfx.h"
 
-#define SCREEN_WIDTH  640 // width of the screen, in pixels
-#define SCREEN_HEIGHT 480 // height of the screen, in pixels
-
 #define PI 3.14159265
 
 #define SHIP_SIZE 32
@@ -40,6 +37,8 @@ void sulock();
 int radians_to_degrees(double rad);
 double degrees_to_radians(int d);
 
+int screen_width,screen_height;
+
 TTF_Font* loadfont(char* file, int ptsize);
 
 /*
@@ -56,7 +55,9 @@ void main() {
 	}
 }*/
 
-int init_sdl() {
+int init_sdl(int width, int height) {
+	screen_width=width;
+	screen_height=height;
 	if (SDL_Init( SDL_INIT_VIDEO ) != 0) {
 
 		fprintf( stderr, "Could not initialise SDL: %s\n", SDL_GetError() );
@@ -72,7 +73,7 @@ int init_sdl() {
 	font=loadfont(FONT_FILE,NICK_FONT_SIZE);
 
 	if ((screen =
-				SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, 8, SDL_SWSURFACE ))
+				SDL_SetVideoMode( screen_width, screen_height, 8, SDL_SWSURFACE ))
 			== NULL) {
 
 		fprintf( stderr, "Could not set SDL video mode: %s\n", SDL_GetError() );
@@ -80,8 +81,8 @@ int init_sdl() {
 	} // if (could not set mode)
 	screen_area.x=0;
 	screen_area.y=0;
-	screen_area.w=SCREEN_WIDTH;
-	screen_area.h=SCREEN_HEIGHT;
+	screen_area.w=screen_width;
+	screen_area.h=screen_height;
 
 	SDL_WM_SetCaption( "Rocket - Robot Sockets", "Rocket - Robot Sockets" );
 	SDL_ShowCursor( SDL_DISABLE );
@@ -147,7 +148,7 @@ void draw_ship(char nick[32],int x, int y, int a,bool attr[NUM_GFX_ATTR]) {
 	Uint32 color = 0xFFFFFFFF;
 	SDL_Surface * cur_ship=ship;
 	SDL_Rect text_rect,ship_pos;
-	double angle=degrees_to_radians(a);
+	double angle=degrees_to_radians(a+90);
 	
 	slock();
 
@@ -184,7 +185,7 @@ void draw_highscore() {
 
 void gfx_update() {
 	if(!active) return;
-	SDL_UpdateRect(screen,0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
+	SDL_UpdateRect(screen,0,0,screen_width,screen_height);
 }
 
 void gfx_clear() {

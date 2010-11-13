@@ -5,7 +5,7 @@
 	#define GFX_ATTR_BOOST 1
 	#define NUM_GFX_ATTR 2
 
-	int init_sdl();
+	int init_sdl(int width,int height);
 	void quit_sdl();
 	/*
 	 * Returns 1 if the user wants to quit
