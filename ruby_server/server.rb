@@ -9,6 +9,12 @@ require 'ship'
 require 'rkt_display'
 require 'rkt_robot'
 
+Thread.abort_on_exception = true
+
+SCREEN_SIZE = [640, 480]
+
+$items = Array.new
+
 # Main class
 class RubyServer
 
@@ -25,7 +31,7 @@ class RubyServer
     loop do # Main loop
 
       # Opens a new thread when a client connects
-      Thread.start(@server.accept) do |client|
+      t = Thread.start(@server.accept) do |client|
         log "New connection"
         state = 0
         hash = ""
@@ -96,7 +102,13 @@ class RubyServer
 						if line == "mode display"
 							log "mode display"
 							obj = RktDisplay.new client
-							client.puts "mode ok"
+							client.puts "mode ok #{SCREEN_SIZE[0]} #{SCREEN_SIZE[1]}"
+							
+							# This is a display connection
+							# Run display loop
+							obj.run
+							client.close
+							break
 							
 						# Robot
 						# This connection is used to controll a bot.
@@ -105,22 +117,22 @@ class RubyServer
 							obj = RktRobot.new client
 							client.puts "mode ok"
 							
+							log "New robot, addning to items"
+							$items.push obj
+							state = 4
+							next
+						end
+
+					# I'm a robot
+					elsif state == 4
+						obj.input line					
+					else
 						# Invalid protocol
 						# Close connection and break loop
-						else
-							client.puts "invalid protocol, expected mode <str>"
-							client.close
-							break
-						end
-						
-						# Start mode
-						# Execute a mode in a new thread
-						# TODO: Tråden fortsätter och skicka data även när anslutingen är stängd
-						Thread.new { obj.run line }
-						break # break loop
-						
+						client.puts "invalid protocol"
+						client.close
+						break
 					end
-					
 				end # loop
       end   # thread
     end     # main loop
@@ -150,18 +162,14 @@ class RubyServer
 
 end
 
-# Create world
-$items = Array.new
-
-nsg = RocketShip.new("nsg", 300, 200)
-nsg.boost = true
-nsg.angle = 45
-$items.push nsg
-
-torandi = RocketShip.new("torandi", 300, 200)
-torandi.boost = true
-torandi.angle = 100
-$items.push torandi
+# The "run" method in the Objects in
+# this array is regularly called.
+t = Thread.new do 
+	loop do
+		$items.each { |i| i.run }
+		sleep 0.1
+	end
+end
 
 # Start everything
 server = RubyServer.new

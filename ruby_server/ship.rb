@@ -1,13 +1,14 @@
 class RocketShip < RocketItem
 
-  def initialize name, x, y
+  def initialize
     @item = "ship"
-    @name = name
-    @x = x
-    @y = y
+    @name = "n/a"
+    @x = 0
+    @y = 0
     @boost = false
     @shoot = false
     @angle = 0
+    @speed = 10
   end
 
   def action
@@ -19,19 +20,10 @@ class RocketShip < RocketItem
   
   def run
     @angle = @angle % 360 if @angle > 360
-    @x = @x + 1
-    @y = @y + Math.tan(@angle - 90).to_i 
-	 if(@x>640)
-	 	@x=0
-	end
-	
-	if(@y>400)
-		@y=0
-	end
-	if(@y<0)
-		@y=400
-	end
-  end
 
-  attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle
+    @y = @y - (@speed * Math.sin(@angle * Math::PI/180)).to_i
+    @x = @x + (@speed * Math.cos(@angle * Math::PI/180)).to_i
+	end
+
+  attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle, :speed, :fire
 end

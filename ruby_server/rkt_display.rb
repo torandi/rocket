@@ -1,33 +1,35 @@
-
+# This is a display connection
 class RktDisplay
 
 	def initialize client
 		@c = client
 	end
 	
-	def send str
-	  puts "RktDisplay: #{str}"
-	  @c.puts str
+	# Send str to the connected client
+	def send str, v=true
+	  puts "RktDisplay: #{str}" if v 
+
+    begin
+  	  @c.puts str
+  	  false
+    rescue Exception=>e
+      true
+    end
+    
 	end
 	
-	def run line
-		i = 10
-		v = 0
+	# Send data to client
+	def run
 		loop do
-
 			frame_time = "%10.6f" % (Time.now).to_f
-			send "frame start #{frame_time}"
+			send "frame start #{frame_time}", false
 
-      $items.each do |item|
-        item.run
-        send "#{item.item} #{item.name} #{item.x} #{item.y} #{item.angle} #{item.action}"
+      $items.each do |obj|
+        break if send obj.output, false
       end
 
-			send "frame stop"
-			sleep 0.01
-
-			i = i + 1
-			v = v - 1
+			send "frame stop", false
+			sleep 0.1
 		end
 	end
 
