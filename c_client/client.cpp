@@ -167,6 +167,8 @@ void read_server(struct thread_data *td) {
 	int ignored_frames=0; //count the number of ignored frames
 	int num_neg_frames=0; //Number of frames with negative age
 
+	pthread_t client_thread_t; //The client thread
+
 	while(run) {
 		int n;
 
@@ -272,8 +274,7 @@ void read_server(struct thread_data *td) {
 				pthread_create(&server_t,NULL,init_server,NULL);
 			} else if(td->mode==MODE_BOT) {
 				//Start thread for forwardning from client->botserver
-				pthread_t tmp_thread_t;
-				pthread_create(&tmp_thread_t,NULL,read_client,td);
+				pthread_create(&client_thread_t,NULL,read_client,td);
 				//Tell client that we are ready to forward data to the server
 #if VERBOSE >= 2
 				printf("Bot socket ready\n");
@@ -417,14 +418,22 @@ parsing_done:
 #endif
 	free(buffer);
 
+
 	if(td->ssock->socket==server_sock)
 		server_sock=0;
 
 	close_socket(td->ssock);
+	td->ssock=0;
+
+	if(td->mode==MODE_GFX && mode_ok) {
+		pthread_join(client_thread_t,NULL);
+	}
 
 
-	if(td->csock!=0)
+	if(td->csock!=0) {
 		close_socket(td->csock);
+		td->csock=0;
+	}
 }
 
 /**
@@ -444,6 +453,12 @@ void * read_client(void * data) {
 			run=false;
 			break;
 		}
+		if(CMP_BUFFER(PROT_CLOSE)) {
+#if VERBOSE >= 2
+			printf("Client closed connection\n");
+#endif
+			break;
+		}
 		//Forward data
 #if VERBOSE >= 8
 		printf("Forwarded: %s\n",buffer);
@@ -451,9 +466,16 @@ void * read_client(void * data) {
 		write_data(td->ssock,buffer,n);
 	}
 
-	printf("Disconnected from server (socket: %i)\n",td->ssock->socket);
-	write_data(td->ssock,"close",sizeof("close"));
-	close_socket(td->csock);
+	printf("Disconnected from client (socket: %i)\n",td->csock->socket);
+	if(td->ssock!=0) {
+		write_data(td->ssock,PROT_CLOSE,sizeof(PROT_CLOSE));
+		close_socket(td->ssock);
+		td->ssock=0;
+	}
+	if(td->csock!=0) {	
+		close_socket(td->csock);
+		td->csock=0;
+	}
 	free(buffer);
 	return 0;
 }

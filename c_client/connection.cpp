@@ -20,7 +20,6 @@ void terminate_sockets() {
 void close_socket(socket_data * sock) {
 	close(sock->socket);
 	free(sock);
-	sock=0;
 }
 
 socket_data * init_socket(int sock,bool ssl) {

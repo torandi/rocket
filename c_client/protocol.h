@@ -7,6 +7,7 @@
 #define PROT_VERSION "cversion"
 #define PROT_MODE_OK "mode ok"
 #define PROT_MODE_OK_GFX "mode ok %i %i"
+#define PROT_CLOSE "close"
 
 #define PROT_GFX_FRAME_START "frame start"
 #define PROT_GFX_FRAME_START_TIME "frame start %lf"
