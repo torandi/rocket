@@ -148,7 +148,7 @@ void draw_ship(char nick[32],int x, int y, int a,bool attr[NUM_GFX_ATTR]) {
 	Uint32 color = 0xFFFFFFFF;
 	SDL_Surface * cur_ship=ship;
 	SDL_Rect text_rect,ship_pos;
-	double angle=degrees_to_radians(a+90);
+	double angle=degrees_to_radians(a);
 	
 	slock();
 
