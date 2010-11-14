@@ -39,9 +39,13 @@ class RubyServer
 
         loop do
         
-        	log "read state #{state}"
+        	#log "read state #{state}"
         	line = read(client)
         	log "got #{line}"
+        
+        	if line.nil?
+        		break
+        	end
         
           # if "close" is sent, close connection
           # and break loop. 
@@ -151,7 +155,13 @@ class RubyServer
   
   # Read a line från a client
   def read client
-	 	client.gets.chomp
+  	begin
+	 		d = client.gets
+	 	rescue Errno::ECONNRESET
+	 		nil
+	 	end
+	 	return nil if not d 
+	 	d.chomp
   end
   
   # Log funktion
@@ -166,7 +176,11 @@ end
 # this array is regularly called.
 t = Thread.new do 
 	loop do
-		$items.each { |i| i.run }
+		$items.each do |i| 
+			if not i.run
+				$items.delete i
+			end
+		end
 		sleep 0.1
 	end
 end

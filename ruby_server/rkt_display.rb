@@ -25,6 +25,7 @@ class RktDisplay
 			send "frame start #{frame_time}", false
 
       $items.each do |obj|
+        next if obj.ship.dead?
         break if send obj.output, false
       end
 
