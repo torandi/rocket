@@ -1,0 +1,13 @@
+Attr: shoot
+Found attr: shoot
+==9852== Thread 4:
+==9852== Invalid read of size 4
+==9852==    at 0x804C30D: read_data(socket_data const*, void*, unsigned int) (connection.cpp:52)
+==9852==    by 0x8049955: read_server(thread_data*) (client.cpp:177)
+==9852==    by 0x8049891: init_server_communication(void*) (client.cpp:146)
+==9852==    by 0x804A817: new_client_thread(void*) (client.cpp:564)
+==9852==    by 0x423CCC8: start_thread (pthread_create.c:304)
+==9852==    by 0x43216AD: clone (clone.S:130)
+==9852==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==9852== 
+

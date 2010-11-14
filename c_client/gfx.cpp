@@ -12,7 +12,7 @@
 
 #define SHIP_SIZE 32
 #define HALF_SHIP_SIZE SHIP_SIZE/2
-#define FIRE_LENGTH 132 
+#define FIRE_LENGTH 128
 
 #define NICK_FONT_SIZE 22
 #define SMOOTH_ROTATION 0
