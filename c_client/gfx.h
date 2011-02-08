@@ -5,7 +5,7 @@
 	#define GFX_ATTR_BOOST 1
 	#define NUM_GFX_ATTR 2
 
-	#define GFX_SERVER_FPS 50
+	#define GFX_SERVER_FPS 10
 	#define GFX_TARGET_FPS 100
 	#define GFX_FACTOR GFX_TARGET_FPS/GFX_SERVER_FPS
 
