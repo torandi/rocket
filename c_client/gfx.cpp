@@ -35,7 +35,6 @@ bool highscore=false;
 void slock();
 void sulock();
 int radians_to_degrees(double rad);
-double degrees_to_radians(int d);
 
 int screen_width,screen_height;
 

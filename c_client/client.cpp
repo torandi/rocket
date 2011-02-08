@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <limits.h>
 #include <vector>
+#include <math.h>
 
 #include "connection.h"
 #include "client.h"
@@ -45,6 +46,7 @@ void *new_client_thread(void *data);
 void * init_server(void * data);
 void * gfx_hndl(void * data);
 double get_time();
+void calculate_interpolated_position(ship_t *ship, double delay);
 
 pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
@@ -55,6 +57,7 @@ int server_sock; //Socket listening for new connections
 socket_data * client_sock; //Socket connected to server
 
 std::vector<ship_t> ships;
+double last_frame=0;
 
 int main(int argc,char *argv[])
 {
@@ -300,6 +303,7 @@ void read_server(struct thread_data *td) {
 				double server_time;
 				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
 				double age=local_time-(server_time+server_time_offset);
+				last_frame=local_time;
 				if(age<max_frame_age) {
 #if VERBOSE >= 9
 					printf("Frame age: %lf s\n",age);
@@ -580,9 +584,18 @@ void update_gfx() {
 	gfx_clear();
 	std::vector<ship_t>::iterator it;
 	for(it=ships.begin();it!=ships.end();++it) {
-		draw_ship(it->nick,it->x,it->y,it->a,it->attr);
+		calculate_interpolated_position(&(*it),get_time()-last_frame);
+		draw_ship(it->nick,it->_x,it->_y,it->a,it->attr);
 	}
 	gfx_update();
+}
+
+/**
+ * Updates ship->_x and _y with delay s gone since the last frame
+ */
+void calculate_interpolated_position(ship_t *ship, double delay) {
+	ship->_x=ship->x+ship->s*delay*cos(ship->a);
+	ship->_y=ship->y+ship->s*delay*sin(ship->a);
 }
 
 /*

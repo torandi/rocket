@@ -11,6 +11,9 @@ struct ship_t {
 	int a; //angle
 	int s; //speed
 	bool attr[NUM_GFX_ATTR];
+	
+	int _x;
+	int _y;
 };
 
 #endif

@@ -7,6 +7,7 @@
 
 	#define GFX_SERVER_FPS 50
 	#define GFX_TARGET_FPS 100
+	#define GFX_FACTOR GFX_TARGET_FPS/GFX_SERVER_FPS
 
 	int init_sdl(int width,int height);
 	void quit_sdl();
@@ -19,4 +20,5 @@
 	void gfx_update();
 	void gfx_clear();
 	void toggle_highscore();
+	double degrees_to_radians(int d);
 #endif
