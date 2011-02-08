@@ -7,7 +7,7 @@
 9: Frame dropping debug info
 10: Socket input/outpu
  */
-#define VERBOSE 7
+#define VERBOSE 4
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -346,9 +346,9 @@ void read_server(struct thread_data *td) {
 				attr_org=attr_str; //save a pointer to orginal allocated memory
 				bzero(ship.attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
 				
-				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,attr_str);
-				if(n>=4) {
-					if(n==5) {
+				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,attr_str);
+				if(n>=5) {
+					if(n==6) {
 #if VERBOSE >= 4
 						printf("Attr: %s\n",attr_str);
 #endif
@@ -471,7 +471,7 @@ void * read_client(void * data) {
 		}
 		//Forward data
 #if VERBOSE >= 7
-		printf("Forwarded: %s\n",buffer);
+		printf("Forwarded: %s",buffer);
 #endif
 		write_data(td->ssock,buffer,n);
 	}
@@ -595,7 +595,7 @@ void * gfx_hndl(void * data) {
 		if(hndl_sdl_events()!=0){
 			exit(0);
 		}
-		usleep(50);
+		usleep(1000/GFX_TARGET_FPS);
 	}
 }
 

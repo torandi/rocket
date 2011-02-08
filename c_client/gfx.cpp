@@ -39,7 +39,7 @@ double degrees_to_radians(int d);
 
 int screen_width,screen_height;
 
-TTF_Font* loadfont(char* file, int ptsize);
+TTF_Font* loadfont(const char* file, int ptsize);
 
 /*
 void main() {
@@ -110,7 +110,7 @@ int init_sdl(int width, int height) {
 	return 0;
 }
 
-TTF_Font* loadfont(char* file, int ptsize) {
+TTF_Font* loadfont(const char* file, int ptsize) {
 	  TTF_Font* tmpfont;
 	  tmpfont = TTF_OpenFont(file, ptsize);
 		if (tmpfont == NULL){

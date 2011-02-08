@@ -5,6 +5,9 @@
 	#define GFX_ATTR_BOOST 1
 	#define NUM_GFX_ATTR 2
 
+	#define GFX_SERVER_FPS 50
+	#define GFX_TARGET_FPS 100
+
 	int init_sdl(int width,int height);
 	void quit_sdl();
 	/*
