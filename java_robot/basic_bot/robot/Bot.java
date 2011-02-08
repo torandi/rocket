@@ -7,8 +7,8 @@ import java.util.Random;
  * @author torandi
  */
 public class Bot implements ClientInterface{
-    static final String server="192.168.0.189";
-    static final int port=4711;
+    static final String server="localhost";
+    static final int port=4710;
 
     int id=new Random().nextInt(1000);
     

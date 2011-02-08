@@ -68,6 +68,7 @@ public class Bot implements ClientInterface{
         } else if(rp.diff(lastScan).norm() < 50){
             lastScan=rp;
             error_ticks=0;
+				//TODO: Calculate future position of target
             si.rotate(rp.angle);
         } else {
             error_ticks++;
