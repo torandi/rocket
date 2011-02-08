@@ -4,7 +4,7 @@ class RktDisplay
 	def initialize client
 		@c = client
 		@send_buffer = Array.new
-		@send_buffer_delay = 3;
+		@send_buffer_delay = 0;
 	end
 	
 	def client

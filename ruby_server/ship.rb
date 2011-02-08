@@ -50,14 +50,8 @@ class RocketShip < RocketItem
       end
     end
 
-    if @boost
-      speed_mod = 1.5
-    else
-      speed_mod = 1.0
-    end
-
-    @y = @y - (@speed * speed_mod * Math.sin(@angle * Math::PI/180)).to_i
-    @x = @x + (@speed * speed_mod * Math.cos(@angle * Math::PI/180)).to_i
+    @y = @y - (speed * Math.sin(@angle * Math::PI/180)).to_i
+    @x = @x + (speed * Math.cos(@angle * Math::PI/180)).to_i
     
     @x = 0 if @x > SCREEN_SIZE[0]
     @y = 0 if @y > SCREEN_SIZE[1]
@@ -73,6 +67,18 @@ class RocketShip < RocketItem
 
   def dead?
     @dead
+  end
+
+  def speed
+		@speed*speed_mod 
+  end
+
+  def speed_mod
+    if @boost
+      speed_mod = 1.5
+    else
+      speed_mod = 1.0
+    end
   end
 
   attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle, :speed, :dead
