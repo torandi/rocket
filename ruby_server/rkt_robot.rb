@@ -32,7 +32,8 @@ class RktRobot
 	end
 	
 	def output
-	  return "#{@ship.item} #{@ship.name} #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.action}"
+	  return "#{@ship.item} #{@ship.name} #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.speed} #{@ship.action}"
+#	  return "#{@ship.item} #{@ship.name} #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.action}"
 	end
 	
 	def ship

@@ -51,6 +51,12 @@ class RubyServer
           # and break loop. 
         	if line == "close"
         		client.close
+        		
+        		# Remove ship
+        		$items.each do |i|
+        		  $items.delete i if i.client == client
+        		end
+        		
         		break
         	end
 
@@ -129,7 +135,7 @@ class RubyServer
 
 					# I'm a robot
 					elsif state == 4
-						obj.input line					
+						obj.input line
 					else
 						# Invalid protocol
 						# Close connection and break loop
