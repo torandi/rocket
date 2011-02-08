@@ -1,5 +1,13 @@
 //Verbose level: 0: nothing, 1: something 2-9: some more 10: All + all input/output from socket
-#define VERBOSE 4
+/*
+1: Server sync, server init info, frame dropping occurances
+2: Socket ready info, client disconnect info
+4: Information about gfx attributes
+7: Client forward output
+9: Frame dropping debug info
+10: Socket input/outpu
+ */
+#define VERBOSE 7
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -414,16 +422,19 @@ parsing_done:
 	}
 
 #if VERBOSE>=1
-	printf("Disconnected from server (socket: %i)\n",td->ssock->socket);
+	if(td->ssock!=0)
+		printf("Disconnected from server (socket: %i)\n",td->ssock->socket);
+	else
+		printf("Disconnected from server (socket already unallocated)\n");
 #endif
 	free(buffer);
 
+	if(td->ssock!=0) {
+		if(td->ssock->socket==server_sock)
+			server_sock=0;
 
-	if(td->ssock->socket==server_sock)
-		server_sock=0;
-
-	close_socket(td->ssock);
-	td->ssock=0;
+		close_socket(&td->ssock);
+	}
 
 	if(td->mode==MODE_GFX && mode_ok) {
 		pthread_join(client_thread_t,NULL);
@@ -431,8 +442,7 @@ parsing_done:
 
 
 	if(td->csock!=0) {
-		close_socket(td->csock);
-		td->csock=0;
+		close_socket(&td->csock);
 	}
 }
 
@@ -460,21 +470,21 @@ void * read_client(void * data) {
 			break;
 		}
 		//Forward data
-#if VERBOSE >= 8
+#if VERBOSE >= 7
 		printf("Forwarded: %s\n",buffer);
 #endif
 		write_data(td->ssock,buffer,n);
 	}
 
+#if VERBOSE >=1 
 	printf("Disconnected from client (socket: %i)\n",td->csock->socket);
+#endif
 	if(td->ssock!=0) {
-		write_data(td->ssock,PROT_CLOSE,sizeof(PROT_CLOSE));
-		close_socket(td->ssock);
-		td->ssock=0;
+		writeln(td->ssock,PROT_CLOSE,sizeof(PROT_CLOSE));
+		close_socket(&td->ssock);
 	}
 	if(td->csock!=0) {	
-		close_socket(td->csock);
-		td->csock=0;
+		close_socket(&td->csock);
 	}
 	free(buffer);
 	return 0;
@@ -561,6 +571,7 @@ void *new_client_thread(void *data) {
 #endif
 	data=malloc(sizeof(td));
 	memcpy(data,&td,sizeof(td));
+
 	init_server_communication(data); //start the connection to the server
 	return NULL;
 }

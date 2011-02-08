@@ -9,8 +9,8 @@
 #define CLIENT_PORT 4710 //Port that bots will connect to localy
 
 //#define SERVER_HOSTNAME "192.168.0.5"
-//#define SERVER_HOSTNAME "localhost"
-#define SERVER_HOSTNAME "10.0.0.108"
+#define SERVER_HOSTNAME "localhost"
+//#define SERVER_HOSTNAME "10.0.0.108"
 //#define SERVER_HOSTNAME "10.0.0.2"
 
 typedef struct socket_data {
@@ -32,7 +32,7 @@ int read_data(const socket_data * sock,void * data,size_t len);
 socket_data * init_socket(int sock,bool ssl);
 
 //Close and deallocate a socket
-void close_socket(socket_data * sock);
+void close_socket(socket_data ** sock);
 
 //Stops all sockets
 void terminate_sockets();
