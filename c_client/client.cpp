@@ -57,10 +57,11 @@ int server_sock; //Socket listening for new connections
 socket_data * client_sock; //Socket connected to server
 
 std::vector<ship_t> ships;
-double last_frame=0;
+double last_frame;
 
 int main(int argc,char *argv[])
 {
+	last_frame=get_time();
 	struct thread_data td;
 	td.mode=MODE_GFX;
 	td.ssock=init_server_connection(&td);
@@ -171,6 +172,7 @@ void read_server(struct thread_data *td) {
 	char * next_write=buffer; //next position in buffer to write to
 	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
 	bool mode_ok=false;
+	bool active_frame=false;
 	double server_time_offset; //The number of seconds we differ from the server
 
 	std::vector<ship_t> frame;
@@ -303,11 +305,11 @@ void read_server(struct thread_data *td) {
 				double server_time;
 				sscanf(buffer,PROT_GFX_FRAME_START_TIME,&server_time);
 				double age=local_time-(server_time+server_time_offset);
-				last_frame=local_time;
 				if(age<max_frame_age) {
 #if VERBOSE >= 9
 					printf("Frame age: %lf s\n",age);
 #endif
+					active_frame=true;
 					frame.clear();
 					ignored_frames=0;
 					if(age<-0.1) { //Negative age
@@ -323,7 +325,7 @@ void read_server(struct thread_data *td) {
 						num_neg_frames=0;
 					}
 				} else {
-
+					active_frame=false;
 #if VERBOSE >= 1 
 					printf("Dropping frame! %lf s old.\n",age);
 #endif
@@ -342,46 +344,51 @@ void read_server(struct thread_data *td) {
 					goto parsing_done;
 				}
 			} else if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
-				ships=frame;
+				if(active_frame) {
+					ships=frame;
+					last_frame=local_time;
+				}
 			} else if(CMP_BUFFER(PROT_GFX_SHIP)) {
-				ship_t ship;
-				void * attr_org;
-				char * attr_str=(char*)malloc(128);
-				attr_org=attr_str; //save a pointer to orginal allocated memory
-				bzero(ship.attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
-				
-				int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,attr_str);
-				if(n>=5) {
-					if(n==6) {
-#if VERBOSE >= 4
-						printf("Attr: %s\n",attr_str);
-#endif
-						//Got attributes
-						char cur_attr[32];
-						int pos;
-						while(strlen(attr_str)>0) {
-							bzero(cur_attr,32);
-							pos=0;
-							while(*attr_str!=0x2C && *attr_str!=0) // 0x2C=','
-								cur_attr[pos++]=*(attr_str++);
-							if(*attr_str!=0)
-								++attr_str;
-#if VERBOSE >= 4
-							printf("Found attr: %s\n",cur_attr);
-#endif
-							if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
-								ship.attr[GFX_ATTR_SHOOT]=true;
-							} else if(strcmp(cur_attr,PROT_GFX_ATTR_BOOST)==0) {
-								ship.attr[GFX_ATTR_BOOST]=true;
-							} else {
-								fprintf(stderr,"Got unknown attribute %s\n",cur_attr);
+				if(active_frame) {
+					ship_t ship;
+					void * attr_org;
+					char * attr_str=(char*)malloc(128);
+					attr_org=attr_str; //save a pointer to orginal allocated memory
+					bzero(ship.attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
+					
+					int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,attr_str);
+					if(n>=5) {
+						if(n==6) {
+	#if VERBOSE >= 4
+							printf("Attr: %s\n",attr_str);
+	#endif
+							//Got attributes
+							char cur_attr[32];
+							int pos;
+							while(strlen(attr_str)>0) {
+								bzero(cur_attr,32);
+								pos=0;
+								while(*attr_str!=0x2C && *attr_str!=0) // 0x2C=','
+									cur_attr[pos++]=*(attr_str++);
+								if(*attr_str!=0)
+									++attr_str;
+	#if VERBOSE >= 4
+								printf("Found attr: %s\n",cur_attr);
+	#endif
+								if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
+									ship.attr[GFX_ATTR_SHOOT]=true;
+								} else if(strcmp(cur_attr,PROT_GFX_ATTR_BOOST)==0) {
+									ship.attr[GFX_ATTR_BOOST]=true;
+								} else {
+									fprintf(stderr,"Got unknown attribute %s\n",cur_attr);
+								}
 							}
 						}
+						frame.push_back(ship);
+						free(attr_org);
+					} else {
+						fprintf(stderr,"Invalid data from gfx server\n");
 					}
-					frame.push_back(ship);
-					free(attr_org);
-				} else {
-					fprintf(stderr,"Invalid data from gfx server\n");
 				}
 			}
 		}
@@ -595,8 +602,8 @@ void update_gfx() {
  */
 void calculate_interpolated_position(ship_t *ship, double delay) {
 	double angle=degrees_to_radians(ship->a);
-	ship->_x=ship->x+(ship->s*delay*cos(angle)*GFX_SERVER_FPS);
-	ship->_y=ship->y-(ship->s*delay*sin(angle)*GFX_SERVER_FPS);
+	ship->_x=ship->x+round(ship->s*delay*cos(angle)*GFX_SERVER_FPS);
+	ship->_y=ship->y-round(ship->s*delay*sin(angle)*GFX_SERVER_FPS);
 }
 
 /*

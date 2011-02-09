@@ -40,7 +40,7 @@ class RktDisplay
       end
 
 			send "frame stop", false
-			sleep 0.1
+			sleep 0.2
 		end
 	end
 
