@@ -47,6 +47,7 @@ void * init_server(void * data);
 void * gfx_hndl(void * data);
 double get_time();
 void calculate_interpolated_position(ship_t *ship, double delay);
+void check_bounds(ship_t * ship);
 
 pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
@@ -604,6 +605,14 @@ void calculate_interpolated_position(ship_t *ship, double delay) {
 	double angle=degrees_to_radians(ship->a);
 	ship->_x=ship->x+round(ship->s*delay*cos(angle)*GFX_SERVER_FPS);
 	ship->_y=ship->y-round(ship->s*delay*sin(angle)*GFX_SERVER_FPS);
+	check_bounds(ship);
+}
+
+void check_bounds(ship_t * ship) {
+	if(ship->_x < 0) ship->_x = screen_width+ship->_x;
+	if(ship->_x > screen_width) ship->_x = ship->_x - screen_width;
+	if(ship->_y < 0) ship->_y = screen_height+ship->_y;
+	if(ship->_y > screen_height) ship->_y  = ship->_y - screen_height;
 }
 
 /*

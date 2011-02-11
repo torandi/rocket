@@ -9,7 +9,7 @@ struct ship_t {
 	int x;
 	int y;
 	int a; //angle
-	int s; //speed
+	float s; //speed
 	bool attr[NUM_GFX_ATTR];
 	
 	int _x;

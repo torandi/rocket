@@ -21,4 +21,6 @@
 	void gfx_clear();
 	void toggle_highscore();
 	double degrees_to_radians(int d);
+
+	extern int screen_width,screen_height;
 #endif
