@@ -11,7 +11,7 @@ class RocketShip < RocketItem
     @shoot = false
     @shoot_ticker = 0
     @angle = 0
-    @speed = 10
+    @speed = 10.0
     @dead = false
     @dead_ticker = 0
   end
@@ -56,7 +56,7 @@ class RocketShip < RocketItem
     @x = 0 if @x > SCREEN_SIZE[0]
     @y = 0 if @y > SCREEN_SIZE[1]
     @x = SCREEN_SIZE[0] if @x < 0
-    @y = SCREEN_SIZE[0] if @y < 0
+    @y = SCREEN_SIZE[1] if @y < 0
     
     @shoot_ticker+= 1 if @shoot
     @boost_ticker+= 1 if @boost
@@ -70,7 +70,11 @@ class RocketShip < RocketItem
   end
 
   def speed
-		@speed*speed_mod 
+		@speed*speed_mod
+  end
+  
+  def speed= n
+    @speed = n
   end
 
   def speed_mod
@@ -81,5 +85,5 @@ class RocketShip < RocketItem
     end
   end
 
-  attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle, :speed, :dead
+  attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle, :dead
 end

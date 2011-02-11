@@ -15,12 +15,16 @@ class RktDisplay
 	def send str, v=true
 	  puts "RktDisplay: [delay: #{@send_buffer_delay}] #{str}" if v 
 
-    # Add to sendbuffer
-    @send_buffer.push [Time.now.to_i + @send_buffer_delay, str]
+    # Add to sendbuffer if @send_buffer_delay > 0
+    @send_buffer.push [Time.now.to_i + @send_buffer_delay, str] if @send_buffer_delay > 0
 
     # Send from sendbuffer
     begin
-  	  @c.puts((@send_buffer.shift)[1]) if Time.now.to_i > (@send_buffer.first)[0]
+      if @send_buffer_delay > 0
+  	    @c.puts((@send_buffer.shift)[1]) if Time.now.to_i >= (@send_buffer.first)[0]
+  	  else
+    	  @c.puts str
+  	  end
   	  false
     rescue Exception=>e
       true
@@ -31,7 +35,7 @@ class RktDisplay
 	# Send data to client
 	def run
 		loop do
-			frame_time = "%10.6f" % (Time.now).to_f
+			frame_time = "%10.6f" % ((Time.now).to_f + @send_buffer_delay.to_f)
 			send "frame start #{frame_time}", false
 
       $items.each do |obj|
