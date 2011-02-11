@@ -13,7 +13,7 @@ class RktDisplay
 	
 	# Send str to the connected client
 	def send str, v=true
-	  puts "RktDisplay: [delay: #{@send_buffer_delay}] #{str}" if v 
+	  puts "RktDisplay: [delay: #{@send_buffer_delay}] #{str}" if $verbose 
 
     # Add to sendbuffer if @send_buffer_delay > 0
     @send_buffer.push [Time.now.to_i + @send_buffer_delay, str] if @send_buffer_delay > 0
@@ -44,7 +44,7 @@ class RktDisplay
       end
 
 			send "frame stop", false
-			sleep 0.2
+			sleep 0.1
 		end
 	end
 

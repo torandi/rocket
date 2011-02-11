@@ -94,6 +94,8 @@ class RktRobot
   end
 
   def cmd_scan
+    @ship.scan = true
+    
     found = false
     $items.each do |i|
    
@@ -102,12 +104,24 @@ class RktRobot
       xd = i.ship.x - @ship.x
       yd = i.ship.y - @ship.y
       dist = Math.sqrt(xd ** 2 + yd ** 2)
+      enemy_rad = Math.atan2(yd, xd)
+      enemu_rad = 2*Math::PI - enemy_rad
+      enemy_angle = enemy_rad * 180/Math::PI
+     # enemy_angle += 360 if enemy_angle < 0
+     # enemy_angle -= 360 if enemy_angle > 360
+
       if dist < 200 and dist > 0
-        @c.puts "scan #{xd} #{yd}"
+        @c.puts "scan #{enemy_angle.to_i} #{dist.to_i}"
         found = true
       end
     end
     @c.puts "scan 0 0" if not found
   end
+  
+  def cmd_verbose
+    $verbose = !$verbose
+  end
+	
+	alias :cmd_fire :cmd_shoot
 	
 end

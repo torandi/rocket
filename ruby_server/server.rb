@@ -14,6 +14,7 @@ Thread.abort_on_exception = true
 SCREEN_SIZE = [640, 480]
 
 $items = Array.new
+$verbose = false;
 
 # Main class
 class RubyServer

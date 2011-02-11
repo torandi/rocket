@@ -14,12 +14,15 @@ class RocketShip < RocketItem
     @speed = 10.0
     @dead = false
     @dead_ticker = 0
+    @scan = false
+    @scan_ticker = 0
   end
 
   def action
     r  = Array.new
     r.push "boost" if @boost
     r.push "shoot" if @shoot
+    r.push "scan" if @scan
     r.join ","
   end
   
@@ -50,17 +53,23 @@ class RocketShip < RocketItem
       end
     end
 
+    if @scan_ticker > 2
+      @scan = false
+      @scan_ticker = 0
+    end
+
     @y = @y - (speed * Math.sin(@angle * Math::PI/180)).to_i
     @x = @x + (speed * Math.cos(@angle * Math::PI/180)).to_i
     
-    @x = 0 if @x > SCREEN_SIZE[0]
-    @y = 0 if @y > SCREEN_SIZE[1]
-    @x = SCREEN_SIZE[0] if @x < 0
-    @y = SCREEN_SIZE[1] if @y < 0
+    @x = @x - SCREEN_SIZE[0] if @x > SCREEN_SIZE[0]
+    @y = @y - SCREEN_SIZE[1] if @y > SCREEN_SIZE[1]
+    @x = SCREEN_SIZE[0] + @x if @x < 0 # x är negativ
+    @y = SCREEN_SIZE[1] + @y if @y < 0
     
     @shoot_ticker+= 1 if @shoot
     @boost_ticker+= 1 if @boost
     @dead_ticker+= 1 if @dead
+    @scan_ticker+= 1 if @scan
     
     true
 	end
@@ -85,5 +94,5 @@ class RocketShip < RocketItem
     end
   end
 
-  attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle, :dead
+  attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle, :dead, :scan
 end
