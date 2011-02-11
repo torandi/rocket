@@ -6,7 +6,10 @@
 #include <SDL/SDL_rotozoom.h>
 #include <SDL/SDL_gfxPrimitives.h>
 
+#include <SDL/SDL_draw.h>
+
 #include "gfx.h"
+#include "ship.h"
 
 #define PI 3.14159265
 
@@ -57,6 +60,7 @@ void main() {
 int init_sdl(int width, int height) {
 	screen_width=width;
 	screen_height=height;
+	printf("Screen size: %ix%i\n",screen_width,screen_height);
 	if (SDL_Init( SDL_INIT_VIDEO ) != 0) {
 
 		fprintf( stderr, "Could not initialise SDL: %s\n", SDL_GetError() );
@@ -141,39 +145,44 @@ int hndl_sdl_events() {
 /**
  * Draws a ship at (x,y) directed at angle a (in degrees). 
  */
-void draw_ship(char nick[32],int x, int y, int a,bool attr[NUM_GFX_ATTR]) {
+void draw_ship(ship_t * s) {
 	if(!active) return;
 
 	Uint32 color = 0xFFFFFFFF;
+	Uint32 scan_color = 0xFFFFFFFF;
 	SDL_Surface * cur_ship=ship;
 	SDL_Rect text_rect,ship_pos;
-	double angle=degrees_to_radians(a);
+	double angle=degrees_to_radians(s->a);
 	
 	slock();
 
-	if(attr[GFX_ATTR_SHOOT])
-		aalineColor(screen,x,y,x+FIRE_LENGTH*cos(angle),y-FIRE_LENGTH*sin(angle),color);
+	if(s->attr[GFX_ATTR_SHOOT])
+		aalineColor(screen,s->_x,s->_y,s->_x+FIRE_LENGTH*cos(angle),s->_y-FIRE_LENGTH*sin(angle),color);
 		
 
-	SDL_Surface *text_surface=TTF_RenderText_Blended(font,nick,font_color);
-	text_rect.x=x-(2*strlen(nick)*NICK_FONT_SIZE)/7;
-	text_rect.y=y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
+	SDL_Surface *text_surface=TTF_RenderText_Blended(font,s->nick,font_color);
+	text_rect.x=s->_x-(2*strlen(s->nick)*NICK_FONT_SIZE)/7;
+	text_rect.y=s->_y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
 
+	if(s->attr[GFX_ATTR_SCAN]) {
+		Draw_Circle(screen,s->_x,s->y,GFX_SCAN_SIZE,scan_color);
+	}
 
-	if(attr[GFX_ATTR_BOOST])
+	if(s->attr[GFX_ATTR_BOOST])
 		cur_ship=ship_boost;
 
 	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
 	SDL_FreeSurface(text_surface);
 
-	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,a,1.0,SMOOTH_ROTATION);
+	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,s->a,1.0,SMOOTH_ROTATION);
 	//ship_pos.x=x-(HALF_SHIP_SIZE+(SHIP_DIAGONAL*abs(sin(angle+PI/4))));
 	//ship_pos.y=y-(HALF_SHIP_SIZE+(SHIP_DIAGONAL*abs(cos(angle+PI/4))));
-	ship_pos.x=x-(rotated_ship->w/2);
-	ship_pos.y=y-(rotated_ship->h/2);
+	ship_pos.x=s->_x-(rotated_ship->w/2);
+	ship_pos.y=s->_y-(rotated_ship->h/2);
 	SDL_BlitSurface(rotated_ship,NULL,screen,&ship_pos);
 
 	SDL_FreeSurface(rotated_ship);
+	
 
 	sulock();
 }

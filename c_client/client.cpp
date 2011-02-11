@@ -380,6 +380,8 @@ void read_server(struct thread_data *td) {
 									ship.attr[GFX_ATTR_SHOOT]=true;
 								} else if(strcmp(cur_attr,PROT_GFX_ATTR_BOOST)==0) {
 									ship.attr[GFX_ATTR_BOOST]=true;
+								} else if(strcmp(cur_attr,PROT_GFX_ATTR_SCAN)==0) {
+									ship.attr[GFX_ATTR_SCAN]=true;
 								} else {
 									fprintf(stderr,"Got unknown attribute %s\n",cur_attr);
 								}
@@ -593,7 +595,7 @@ void update_gfx() {
 	std::vector<ship_t>::iterator it;
 	for(it=ships.begin();it!=ships.end();++it) {
 		calculate_interpolated_position(&(*it),get_time()-last_frame);
-		draw_ship(it->nick,it->_x,it->_y,it->a,it->attr);
+		draw_ship(&(*it));
 	}
 	gfx_update();
 }
@@ -603,15 +605,15 @@ void update_gfx() {
  */
 void calculate_interpolated_position(ship_t *ship, double delay) {
 	double angle=degrees_to_radians(ship->a);
-	ship->_x=ship->x+round(ship->s*delay*cos(angle)*GFX_SERVER_FPS);
-	ship->_y=ship->y-round(ship->s*delay*sin(angle)*GFX_SERVER_FPS);
+	ship->_x=ship->x+ceil(ship->s*delay*cos(angle)*GFX_SERVER_FPS);
+	ship->_y=ship->y-ceil(ship->s*delay*sin(angle)*GFX_SERVER_FPS);
 	check_bounds(ship);
 }
 
 void check_bounds(ship_t * ship) {
-	if(ship->_x < 0) ship->_x = screen_width+ship->_x;
+	if(ship->_x <= 0) ship->_x = screen_width-ship->_x; //x is already negtive!
 	if(ship->_x > screen_width) ship->_x = ship->_x - screen_width;
-	if(ship->_y < 0) ship->_y = screen_height+ship->_y;
+	if(ship->_y <= 0) ship->_y = screen_height+ship->_y; //y is already negtive!
 	if(ship->_y > screen_height) ship->_y  = ship->_y - screen_height;
 }
 

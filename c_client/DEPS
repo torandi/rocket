@@ -1,1 +1,7 @@
 libsdl-dev libsdl-gfx1.2-dev libsdl-ttf2.0-dev libsdl-image-dev 
+
+Also requires SDL_Draw, located in deps/SDL_Draw_<version> To install:
+$ ./configure
+$ make
+# make install
+# cp include/SDL_Draw.h /usr/include/SDL/SDL_Draw.h
