@@ -4,4 +4,4 @@ Also requires SDL_Draw, located in deps/SDL_Draw_<version> To install:
 $ ./configure
 $ make
 # make install
-# cp include/SDL_Draw.h /usr/include/SDL/SDL_Draw.h
+- Required includefile (slightly modified) located in includes

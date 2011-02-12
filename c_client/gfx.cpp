@@ -6,7 +6,7 @@
 #include <SDL/SDL_rotozoom.h>
 #include <SDL/SDL_gfxPrimitives.h>
 
-#include <SDL/SDL_draw.h>
+#include "SDL_draw.h"
 
 #include "gfx.h"
 #include "ship.h"
