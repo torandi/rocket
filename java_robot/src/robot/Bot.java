@@ -6,8 +6,8 @@ import java.util.Random;
  *
  * @author torandi
  */
-public class Bot implements ClientInterface{
-    static final int port=4711;
+public class Bot implements ClientInterface {
+    static final int port=4710;
 
 	private String server;
     private RelativePostion lastScan =null;
@@ -43,6 +43,7 @@ public class Bot implements ClientInterface{
     }
 
     public void noScanResult() {
+        System.out.println("");
         lastScan=null;
         inactive_ticks++;
         si.scan();
@@ -97,7 +98,6 @@ public class Bot implements ClientInterface{
 
     public void dead() {
         System.out.println("Snap. Du dog.");
-        new Bot(server);
     }
 
 }

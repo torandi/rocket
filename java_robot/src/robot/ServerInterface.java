@@ -36,54 +36,55 @@ public class ServerInterface implements XStreamParent {
             ci.connected();
             sck.setParent(this);
             sck.initXStreamReciver();
-            //Send client name
-            sck.writeln(ci.clientName());
         }
     }
 
     public void fire() {
-        sck.writeln("f");
+        sck.writeln("shoot");
     }
 
     public void stop() {
-        if(moving)
         sck.writeln("stop");
     }
 
     public void start() {
-        if(moving) {
-            sck.writeln("stop");
-        }
+        sck.writeln("start");
     }
 
     public void boost() {
-        sck.writeln("b");
+        sck.writeln("boost");
     }
 
     public void scan() {
         scan=true;
-        sck.writeln("s");
+        sck.writeln("scan");
+    }
+
+    public void send_name() {
+        sck.writeln("name "+ci.clientName());
     }
 
     public void rotate(double angle) {
         int grad=(int)Math.toDegrees(angle);
-        sck.writeln("a "+grad);
+        sck.writeln("angle "+grad);
     }
 
     public synchronized void dataRecived(String data, ByteBuffer b, XSocket sck) {
         try {
-            if(data.equals("Redo!")) {
+            if(data.equals("ready")) {
+                //Send client name
+                send_name();
                 ci.ready();
                 ready=true;
                 return;
             }
             if(ready) {
                 if(data.trim().equals("dead")) {
-                    sck.close();
                     ci.dead();
-                } else {
+                } else if(data.trim().startsWith("scan")){
+                    data=data.trim().substring(5);
                     //Scanning resultat
-                    if(data.trim().equals("0")) {
+                    if(data.trim().equals("0 0")) {
                        ci.noScanResult();
                     } else {
                        String[] split = data.split(" ");
@@ -91,6 +92,8 @@ public class ServerInterface implements XStreamParent {
                          ci.scanResult(new RelativePostion(Integer.parseInt(split[0].trim()),Integer.parseInt(split[1].trim())));
                        }
                     }
+                } else {
+                    System.out.println(data);
                 }
             }
         } catch (Exception e) {

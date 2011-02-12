@@ -166,6 +166,8 @@ void draw_ship(ship_t * s) {
 
 	if(s->attr[GFX_ATTR_SCAN]) {
 		Draw_Circle(screen,s->_x,s->y,GFX_SCAN_SIZE,scan_color);
+		//Draw_Circle(screen,s->_x,s->y,GFX_SCAN_SIZE*0.6,scan_color);
+		//Draw_Circle(screen,s->_x,s->y,GFX_SCAN_SIZE*0.3,scan_color);
 	}
 
 	if(s->attr[GFX_ATTR_BOOST])
