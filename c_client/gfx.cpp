@@ -6,8 +6,6 @@
 #include <SDL/SDL_rotozoom.h>
 #include <SDL/SDL_gfxPrimitives.h>
 
-#include "SDL_draw.h"
-
 #include "gfx.h"
 #include "ship.h"
 
@@ -149,7 +147,9 @@ void draw_ship(ship_t * s) {
 	if(!active) return;
 
 	Uint32 color = 0xFFFFFFFF;
-	Uint32 scan_color = 0xFFFFFFFF;
+	Uint32 scan_color1 = 0xFFFFFFFF;
+	Uint32 scan_color2 = 0x999999FF;
+	Uint32 scan_color3 = 0x555555FF;
 	SDL_Surface * cur_ship=ship;
 	SDL_Rect text_rect,ship_pos;
 	double angle=degrees_to_radians(s->a);
@@ -165,9 +165,10 @@ void draw_ship(ship_t * s) {
 	text_rect.y=s->_y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
 
 	if(s->attr[GFX_ATTR_SCAN]) {
-		Draw_Circle(screen,s->_x,s->y,GFX_SCAN_SIZE,scan_color);
-		//Draw_Circle(screen,s->_x,s->y,GFX_SCAN_SIZE*0.6,scan_color);
-		//Draw_Circle(screen,s->_x,s->y,GFX_SCAN_SIZE*0.3,scan_color);
+		printf("Draw circle at (%i,%i)\n",s->_x,s->_y);
+		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE,scan_color1);
+		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE*0.6,scan_color2);
+		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE*0.3,scan_color3);
 	}
 
 	if(s->attr[GFX_ATTR_BOOST])

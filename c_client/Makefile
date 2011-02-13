@@ -1,10 +1,9 @@
 LDFLAGS=-pthread -lSDL -lSDL_gfx -lSDL_ttf -lSDL_image
-CFLAGS = -g -Wall -I./includes
+CFLAGS = -g -Wall
 
 all: client
-
-client: protocol.o client.o gfx.o connection.o deps/SDL_draw/src/SDL_draw.o
-	g++ ${LDFLAGS} ${CFLAGS} -o client protocol.o client.o gfx.o connection.o deps/SDL_draw/src/SDL_draw.o
+client: protocol.o client.o gfx.o connection.o 
+	g++ ${LDFLAGS} ${CFLAGS}  -o client protocol.o client.o gfx.o connection.o 
 
 client.o: client.cpp connection.h gfx.h 
 	g++ ${LDFLAGS} ${CFLAGS} -c -o client.o client.cpp
