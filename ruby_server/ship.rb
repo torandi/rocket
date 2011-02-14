@@ -27,7 +27,7 @@ class RocketShip < RocketItem
   end
   
   def run
-    @angle = @angle % 360 if @angle > 360
+    @angle = @angle % 2*Math::PI if @angle > 2*Math::PI
 
     if @shoot_ticker > 5
       @shoot = false
@@ -58,8 +58,8 @@ class RocketShip < RocketItem
       @scan_ticker = 0
     end
 
-    @y = @y - (speed * Math.sin(@angle * Math::PI/180)).to_i
-    @x = @x + (speed * Math.cos(@angle * Math::PI/180)).to_i
+    @y = @y - (speed * Math.sin(@angle)).to_i
+    @x = @x + (speed * Math.cos(@angle)).to_i
     
     @x = @x - SCREEN_SIZE[0] if @x > SCREEN_SIZE[0]
     @y = @y - SCREEN_SIZE[1] if @y > SCREEN_SIZE[1]

@@ -46,7 +46,8 @@ class RktRobot
 	end
 	
 	def cmd_angle v
-	  @ship.angle = v.to_i
+	  # Convert to radians
+	  @ship.angle = v.to_i * Math::PI/180
 	end
 
   def cmd_shoot
