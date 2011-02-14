@@ -4,6 +4,7 @@ class RktRobot
 	  @ship = RocketShip.new client
 	  puts "new rocketship"
 	  @c = client
+	  @pulse = Time.now.to_i
 	end
 	
 	def client
@@ -12,6 +13,8 @@ class RktRobot
 	
 	# Execute robot
 	def run
+	  pulse = Time.now.to_i - @pulse
+	  return false if pulse > 120
 	  @ship.run
 	end
 	
@@ -19,6 +22,8 @@ class RktRobot
 	def input line
 	
     return if @ship.dead?
+	
+	  @pulse = Time.now.to_i
 	
 	  begin
 	    if line =~ /^([a-z]+) ([a-z0-9]+)/
@@ -32,7 +37,13 @@ class RktRobot
 	end
 	
 	def output
-	  return "#{@ship.item} #{@ship.name} #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.speed} #{@ship.action}"
+	  pulse = Time.now.to_i - @pulse
+	  if pulse > 60
+	    pulse_str = "(#{pulse})"
+	  else
+	    pulse_str = ""
+	  end
+	  return "#{@ship.item} #{@ship.name}#{pulse_str} #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.speed} #{@ship.action}"
 	end
 	
 	def ship
