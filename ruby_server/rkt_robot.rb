@@ -101,14 +101,26 @@ class RktRobot
    
       next if i.ship.dead?
 
+      # Get enemy dela and dist
       xd = i.ship.x - @ship.x
       yd = i.ship.y - @ship.y
       dist = Math.sqrt(xd ** 2 + yd ** 2)
+      
+      # Calculate angle to enemy (radians)
       enemy_rad = Math.atan2(yd, xd)
-      enemu_rad = 2*Math::PI - enemy_rad
+      enemy_rad = enemy_rad * Math::PI/2      if xd < 0 and yd > 0
+      enemy_rad = enemy_rad * -1              if xd < 0 and yd < 0
+      enemy_rad = enemy_rad * Math::PI/2 * -1 if xd > 0 and yd < 0
+      enemy_rad = 2*Math::PI - enemy_rad      if xd > 0 and yd > 0
+
+      # Debug
+      puts "Enemy in quadriant 1"             if xd < 0 and yd > 0
+      puts "Enemy in quadriant 2"             if xd < 0 and yd < 0
+      puts "Enemy in quadriant 3"             if xd > 0 and yd < 0
+      puts "Enemy in quadriant 4"             if xd > 0 and yd > 0
+      
+      # convert to degres
       enemy_angle = enemy_rad * 180/Math::PI
-     # enemy_angle += 360 if enemy_angle < 0
-     # enemy_angle -= 360 if enemy_angle > 360
 
       if dist < 200 and dist > 0
         @c.puts "scan #{enemy_angle.to_i} #{dist.to_i}"
