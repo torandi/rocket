@@ -58,8 +58,8 @@ class RocketShip < RocketItem
       @scan_ticker = 0
     end
 
-    @y = @y - (speed * Math.sin(@angle)).to_i
-    @x = @x + (speed * Math.cos(@angle)).to_i
+    @y = (@y - speed * Math.sin(@angle)).floor
+    @x = (@x + speed * Math.cos(@angle)).floor
     
     @x = @x - SCREEN_SIZE[0] if @x > SCREEN_SIZE[0]
     @y = @y - SCREEN_SIZE[1] if @y > SCREEN_SIZE[1]

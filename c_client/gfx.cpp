@@ -165,7 +165,6 @@ void draw_ship(ship_t * s) {
 	text_rect.y=s->_y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
 
 	if(s->attr[GFX_ATTR_SCAN]) {
-		printf("Draw circle at (%i,%i)\n",s->_x,s->_y);
 		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE,scan_color1);
 		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE*0.6,scan_color2);
 		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE*0.3,scan_color3);
@@ -177,7 +176,7 @@ void draw_ship(ship_t * s) {
 	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
 	SDL_FreeSurface(text_surface);
 
-	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,s->a,1.0,SMOOTH_ROTATION);
+	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,radians_to_degrees(s->a),1.0,SMOOTH_ROTATION);
 	//ship_pos.x=x-(HALF_SHIP_SIZE+(SHIP_DIAGONAL*abs(sin(angle+PI/4))));
 	//ship_pos.y=y-(HALF_SHIP_SIZE+(SHIP_DIAGONAL*abs(cos(angle+PI/4))));
 	ship_pos.x=s->_x-(rotated_ship->w/2);
