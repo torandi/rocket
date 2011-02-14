@@ -12,7 +12,7 @@ class RktDisplay
 	end
 	
 	# Send str to the connected client
-	def send str, v=true
+	def send str
 	  puts "RktDisplay: [delay: #{@send_buffer_delay}] #{str}" if $verbose 
 
     # Add to sendbuffer if @send_buffer_delay > 0
@@ -26,7 +26,7 @@ class RktDisplay
     	  @c.puts str
   	  end
   	  false
-    rescue Exception=>e
+    rescue Errno::EPIPE=>e
       true
     end
     
@@ -36,14 +36,14 @@ class RktDisplay
 	def run
 		loop do
 			frame_time = "%10.6f" % ((Time.now).to_f + @send_buffer_delay.to_f)
-			send "frame start #{frame_time}", false
+			send "frame start #{frame_time}"
 
       $items.each do |obj|
         next if obj.ship.dead?
-        break if send obj.output, false
+        break if send obj.output
       end
 
-			send "frame stop", false
+			send "frame stop"
 			sleep 0.1
 		end
 	end

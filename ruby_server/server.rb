@@ -119,6 +119,7 @@ class RubyServer
 							# Run display loop
 							obj.run
 							client.close
+							log "Display closed"
 							break
 							
 						# Robot
