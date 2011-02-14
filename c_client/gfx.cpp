@@ -152,7 +152,7 @@ void draw_ship(ship_t * s) {
 	Uint32 scan_color3 = 0x555555FF;
 	SDL_Surface * cur_ship=ship;
 	SDL_Rect text_rect,ship_pos;
-	double angle=degrees_to_radians(s->a);
+	double angle=s->a;
 	
 	slock();
 

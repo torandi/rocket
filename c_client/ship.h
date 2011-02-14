@@ -8,7 +8,7 @@ struct ship_t {
 	char nick[32];
 	int x;
 	int y;
-	int a; //angle
+	double a; //angle
 	float s; //speed
 	bool attr[NUM_GFX_ATTR];
 	

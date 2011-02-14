@@ -604,9 +604,8 @@ void update_gfx() {
  * Updates ship->_x and _y with delay s gone since the last frame
  */
 void calculate_interpolated_position(ship_t *ship, double delay) {
-	double angle=degrees_to_radians(ship->a);
-	ship->_x=ship->x+ceil(ship->s*delay*cos(angle)*GFX_SERVER_FPS);
-	ship->_y=ship->y-ceil(ship->s*delay*sin(angle)*GFX_SERVER_FPS);
+	ship->_x=ship->x+ceil(ship->s*delay*cos(ship->a)*GFX_SERVER_FPS);
+	ship->_y=ship->y-ceil(ship->s*delay*sin(ship->a)*GFX_SERVER_FPS);
 	check_bounds(ship);
 }
 
