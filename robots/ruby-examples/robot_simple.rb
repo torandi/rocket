@@ -1,5 +1,5 @@
 # Ruby example bot
-# This is bare minimum, the bot will connect and do nothing.
+# This is simple bot, the bot will try to hunt down bots.
 
 require 'socket'
 
