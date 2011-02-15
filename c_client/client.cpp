@@ -2,12 +2,12 @@
 /*
 1: Server sync, server init info, frame dropping occurances
 2: Socket ready info, client disconnect info
-4: Information about gfx attributes
+5: Information about gfx attributes
 7: Client forward output
 9: Frame dropping debug info
 10: Socket input/outpu
  */
-#define VERBOSE 6
+#define VERBOSE 3
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -360,7 +360,7 @@ void read_server(struct thread_data *td) {
 					int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,attr_str);
 					if(n>=5) {
 						if(n==6) {
-	#if VERBOSE >= 4
+	#if VERBOSE >= 5
 							printf("Attr: %s\n",attr_str);
 	#endif
 							//Got attributes
@@ -373,7 +373,7 @@ void read_server(struct thread_data *td) {
 									cur_attr[pos++]=*(attr_str++);
 								if(*attr_str!=0)
 									++attr_str;
-	#if VERBOSE >= 4
+	#if VERBOSE >= 5
 								printf("Found attr: %s\n",cur_attr);
 	#endif
 								if(strcmp(cur_attr,PROT_GFX_ATTR_SHOOT)==0) {
