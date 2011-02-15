@@ -104,9 +104,17 @@ class RktRobot
   def cmd_stop
     @ship.speed = 0
   end
+  
+  def cmd_toggle
+    return cmd_start if @ship.speed == 0
+    cmd_stop
+  end
 
   def cmd_scan
     @ship.scan = true
+
+    puts "My angle is #{@ship.angle}" if $verbose > 2
+    puts "My cordinates is x:#{@ship.x} y:#{@ship.y}"
     
     found = false
     $items.each do |i|
@@ -134,6 +142,17 @@ class RktRobot
       # convert to degres
       enemy_angle = enemy_rad * 180/Math::PI
 
+      if $verbose > 2
+        puts "Ship found at x:#{i.ship.x} y:#{i.ship.y}"
+        puts "Delta x:#{xd} y:#{yd}"
+        puts "The distance to the ship is #{dist}"
+        puts "Angle to enemy is #{enemy_angle} (#{enemy_rad} radians)"
+        puts "Shipt in 1th quadriant" if yd < 0 and xd > 0
+        puts "Shipt in 2nd quadriant" if yd < 0 and xd < 0
+        puts "Shipt in 3rd quadriant" if yd > 0 and xd < 0
+        puts "Shipt in 4th quadriant" if yd > 0 and xd > 0
+      end
+
       if dist < 200 and dist > 0
         @c.puts "scan #{enemy_angle.to_i} #{dist.to_i}"
         found = true
@@ -142,8 +161,9 @@ class RktRobot
     @c.puts "scan 0 0" if not found
   end
   
-  def cmd_verbose
-    $verbose = !$verbose
+  def cmd_verbose level
+    puts "Enable verbose level #{level}"
+    $verbose = level.to_i
   end
 	
 	alias :cmd_fire :cmd_shoot

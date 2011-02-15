@@ -13,7 +13,7 @@ class RktDisplay
 	
 	# Send str to the connected client
 	def send str
-	  puts "RktDisplay: [delay: #{@send_buffer_delay}] #{str}" if $verbose 
+	  puts "RktDisplay: [delay: #{@send_buffer_delay}] #{str}" if $verbose > 3
 
     # Add to sendbuffer if @send_buffer_delay > 0
     @send_buffer.push [Time.now.to_i + @send_buffer_delay, str] if @send_buffer_delay > 0
