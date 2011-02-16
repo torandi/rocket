@@ -34,16 +34,18 @@ class RktDisplay
 	
 	# Send data to client
 	def run
-		loop do
+	  stop = false
+	
+		while not stop do
 			frame_time = "%10.6f" % ((Time.now).to_f + @send_buffer_delay.to_f)
-			send "frame start #{frame_time}"
+			stop = send "frame start #{frame_time}"
 
       $items.each do |obj|
         next if obj.ship.dead?
-        break if send obj.output
+        stop = send obj.output
       end
 
-			send "frame stop"
+			stop = send "frame stop"
 			sleep 0.1
 		end
 	end

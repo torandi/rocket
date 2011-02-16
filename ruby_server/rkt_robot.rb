@@ -114,7 +114,7 @@ class RktRobot
     @ship.scan = true
 
     puts "My angle is #{@ship.angle}" if $verbose > 2
-    puts "My cordinates is x:#{@ship.x} y:#{@ship.y}"
+    puts "My cordinates is x:#{@ship.x} y:#{@ship.y}" if $verbose > 2
     
     found = false
     $items.each do |i|
