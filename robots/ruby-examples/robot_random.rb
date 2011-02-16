@@ -1,10 +1,7 @@
 # Ruby example bot
-# This is simple bot, the bot move around.
+# This is simple bot, the bot moves around.
 
 require 'socket'
-
-# Useful for debugning
-Thread.abort_on_exception = true
 
 # You need to connect to the display
 hostname = 'localhost'
