@@ -26,7 +26,7 @@ class RktDisplay
     	  @c.puts str
   	  end
   	  false
-    rescue Errno::EPIPE=>e
+    rescue Exception=>e
       true
     end
     
