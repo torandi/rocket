@@ -20,7 +20,7 @@
 	 * Returns 1 if the user wants to quit
 	 */
 	int hndl_sdl_events();
-	void draw_ship(ship_t *ship);
+	void draw_ship(const ship_t &ship);
 	void draw_highscore();
 	void gfx_update();
 	void gfx_clear();

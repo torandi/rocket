@@ -50,8 +50,8 @@ void *new_client_thread(void *data);
 void * init_server(void * data);
 void * gfx_hndl(void * data);
 double get_time();
-void calculate_interpolated_position(ship_t *ship, double delay);
-void check_bounds(ship_t * ship);
+void calculate_interpolated_position(ship_t &ship, double delay);
+void check_bounds(ship_t &ship);
 
 pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
@@ -618,8 +618,8 @@ void update_gfx() {
 	gfx_clear();
 	std::vector<ship_t>::iterator it;
 	for(it=ships.begin();it!=ships.end();++it) {
-		calculate_interpolated_position(&(*it),get_time()-last_frame);
-		draw_ship(&(*it));
+		calculate_interpolated_position(*it,get_time()-last_frame);
+		draw_ship(*it);
 	}
 	gfx_update();
 }
@@ -627,17 +627,17 @@ void update_gfx() {
 /**
  * Updates ship->_x and _y with delay s gone since the last frame
  */
-void calculate_interpolated_position(ship_t *ship, double delay) {
-	ship->_x=floor(ship->x+ship->s*delay*cos(ship->a)*GFX_SERVER_FPS);
-	ship->_y=floor(ship->y-ship->s*delay*sin(ship->a)*GFX_SERVER_FPS);
+void calculate_interpolated_position(ship_t &ship, double delay) {
+	ship._x=floor(ship.x+ship.s*delay*cos(ship.a)*GFX_SERVER_FPS);
+	ship._y=floor(ship.y-ship.s*delay*sin(ship.a)*GFX_SERVER_FPS);
 	check_bounds(ship);
 }
 
-void check_bounds(ship_t * ship) {
-	if(ship->_x <= 0) ship->_x = screen_width-ship->_x; //x is already negtive!
-	if(ship->_x > screen_width) ship->_x = ship->_x - screen_width;
-	if(ship->_y <= 0) ship->_y = screen_height+ship->_y; //y is already negtive!
-	if(ship->_y > screen_height) ship->_y  = ship->_y - screen_height;
+void check_bounds(ship_t &ship) {
+	if(ship._x < 0) ship._x = screen_width+ship._x; //x is already negtive!
+	if(ship._x > screen_width) ship._x = ship._x - screen_width;
+	if(ship._y < 0) ship._y = screen_height+ship._y; //y is already negtive!
+	if(ship._y > screen_height) ship._y  = ship._y - screen_height;
 }
 
 /*

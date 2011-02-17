@@ -143,7 +143,7 @@ int hndl_sdl_events() {
 /**
  * Draws a ship at (x,y) directed at angle a (in degrees). 
  */
-void draw_ship(ship_t * s) {
+void draw_ship(const ship_t &s) {
 	if(!active) return;
 
 	Uint32 color = 0xFFFFFFFF;
@@ -152,35 +152,32 @@ void draw_ship(ship_t * s) {
 	Uint32 scan_color3 = 0x555555FF;
 	SDL_Surface * cur_ship=ship;
 	SDL_Rect text_rect,ship_pos;
-	double angle=s->a;
 	
 	slock();
 
-	if(s->attr[GFX_ATTR_SHOOT])
-		aalineColor(screen,s->_x,s->_y,s->_x+FIRE_LENGTH*cos(angle),s->_y-FIRE_LENGTH*sin(angle),color);
+	if(s.attr[GFX_ATTR_SHOOT])
+		aalineColor(screen,s._x,s._y,s._x+FIRE_LENGTH*cos(s.a),s._y-FIRE_LENGTH*sin(s.a),color);
 		
 
-	SDL_Surface *text_surface=TTF_RenderText_Blended(font,s->nick,font_color);
-	text_rect.x=s->_x-(2*strlen(s->nick)*NICK_FONT_SIZE)/7;
-	text_rect.y=s->_y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
+	SDL_Surface *text_surface=TTF_RenderText_Blended(font,s.nick,font_color);
+	text_rect.x=s._x-(2*strlen(s.nick)*NICK_FONT_SIZE)/7;
+	text_rect.y=s._y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
 
-	if(s->attr[GFX_ATTR_SCAN]) {
-		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE,scan_color1);
-		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE*0.6,scan_color2);
-		circleColor(screen,s->_x,s->_y,GFX_SCAN_SIZE*0.3,scan_color3);
+	if(s.attr[GFX_ATTR_SCAN]) {
+		circleColor(screen,s._x,s._y,GFX_SCAN_SIZE,scan_color1);
+		circleColor(screen,s._x,s._y,GFX_SCAN_SIZE*0.6,scan_color2);
+		circleColor(screen,s._x,s._y,GFX_SCAN_SIZE*0.3,scan_color3);
 	}
 
-	if(s->attr[GFX_ATTR_BOOST])
+	if(s.attr[GFX_ATTR_BOOST])
 		cur_ship=ship_boost;
 
 	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
 	SDL_FreeSurface(text_surface);
 
-	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,radians_to_degrees(s->a),1.0,SMOOTH_ROTATION);
-	//ship_pos.x=x-(HALF_SHIP_SIZE+(SHIP_DIAGONAL*abs(sin(angle+PI/4))));
-	//ship_pos.y=y-(HALF_SHIP_SIZE+(SHIP_DIAGONAL*abs(cos(angle+PI/4))));
-	ship_pos.x=s->_x-(rotated_ship->w/2);
-	ship_pos.y=s->_y-(rotated_ship->h/2);
+	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,radians_to_degrees(s.a),1.0,SMOOTH_ROTATION);
+	ship_pos.x=s._x-(rotated_ship->w/2);
+	ship_pos.y=s._y-(rotated_ship->h/2);
 	SDL_BlitSurface(rotated_ship,NULL,screen,&ship_pos);
 
 	SDL_FreeSurface(rotated_ship);
