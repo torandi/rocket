@@ -56,6 +56,7 @@ void check_bounds(ship_t &ship);
 pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
+pthread_mutex_t frame_lock=PTHREAD_MUTEX_INITIALIZER;
 const double max_frame_age=0.5; //The max age of a frame in seconds
 
 int server_sock; //Socket listening for new connections
@@ -399,8 +400,10 @@ void read_server(struct thread_data *td) {
 				}
 			} else if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
 				if(active_frame) {
+					pthread_mutex_lock(&frame_lock);
 					ships=frame;
 					last_frame=local_time;
+					pthread_mutex_unlock(&frame_lock);
 				}
 			} else if(CMP_BUFFER(PROT_GFX_SHIP)) {
 				if(active_frame) {
@@ -642,12 +645,14 @@ void *new_client_thread(void *data) {
 
 void update_gfx() {
 	gfx_clear();
+	pthread_mutex_lock(&frame_lock);
 	std::vector<ship_t>::iterator it;
 	for(it=ships.begin();it!=ships.end();++it) {
 		calculate_interpolated_position(*it,get_time()-last_frame);
 		draw_ship(*it);
 	}
 	gfx_update();
+	pthread_mutex_unlock(&frame_lock);
 }
 
 /**
