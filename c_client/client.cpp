@@ -103,7 +103,7 @@ int main(int argc,char *argv[])
 			}
 		}
 		if(strcmp(argv[i],"-h")==0 || strcmp(argv[i],"--help")==0) {
-			printf("Arguments:\n\t-nox: Turn of graphics\n\t -s, --server <server>  : Set server\n\t-sp,--server-port <port> : Set server port\n\t-lp,--local-port : Set which port to listen to localy\n");
+			printf("Arguments:\n\t-nox: Turn off graphics\n\t -s, --server <server>  : Set server\n\t-sp,--server-port <port> : Set server port\n\t-lp,--local-port : Set which port to listen to\n\t-h,--help : Show this help text\n");
 			exit(0);
 		}
 	}
