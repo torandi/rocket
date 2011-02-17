@@ -68,11 +68,6 @@ Config config(CONFIG_FILE);
 
 int main(int argc,char *argv[])
 {
-	for(int i=0;i<argc;++i) {
-		if(strcmp(argv[i],"-nox")==0)  {
-			nox=true;
-		}
-	}
 	
 	try {
 		server_hostname=config["server_hostname"];
@@ -80,6 +75,37 @@ int main(int argc,char *argv[])
 		local_port=atoi(config["local_port"].c_str());
 	} catch (std::exception &e) {
 		printf("Failed to read all data from config\n");
+	}
+
+	for(int i=0;i<argc;++i) {
+		if(strcmp(argv[i],"-nox")==0)  {
+			nox=true;
+		}
+		if(strcmp(argv[i],"-s")==0 || strcmp(argv[i],"--server")==0) {
+			if(argc>i+1) {
+				server_hostname=std::string(argv[i+1]);
+			} else {
+				fprintf(stderr,"Missing parameter to argument %s\n",argv[i]);
+			}
+		}
+		if(strcmp(argv[i],"-sp")==0 || strcmp(argv[i],"--server-port")==0) {
+			if(argc>i+1) {
+				server_port=atoi(argv[i+1]);
+			} else {
+				fprintf(stderr,"Missing parameter to argument %s\n",argv[i]);
+			}
+		}
+		if(strcmp(argv[i],"-lp")==0 || strcmp(argv[i],"--local-port")==0) {
+			if(argc>i+1) {
+				local_port=atoi(argv[i+1]);
+			} else {
+				fprintf(stderr,"Missing parameter to argument %s\n",argv[i]);
+			}
+		}
+		if(strcmp(argv[i],"-h")==0 || strcmp(argv[i],"--help")==0) {
+			printf("Arguments:\n\t-nox: Turn of graphics\n\t -s, --server <server>  : Set server\n\t-sp,--server-port <port> : Set server port\n\t-lp,--local-port : Set which port to listen to localy\n");
+			exit(0);
+		}
 	}
 
 	last_frame=get_time();
