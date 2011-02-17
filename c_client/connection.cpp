@@ -5,6 +5,10 @@
 #include <unistd.h>
 #include <string.h>
 
+int server_port=4711;
+int local_port=4711;
+std::string server_hostname="localhost";
+
 /**
  * Stop all sockets
  */

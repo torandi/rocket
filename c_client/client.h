@@ -2,6 +2,9 @@
 #define _CLIENT_H_
 
 #include "connection.h"
+#include "config.h"
+
+	#define CONFIG_FILE "rocket.conf"
 
 	typedef enum {
 		INIT=0,
@@ -26,4 +29,7 @@
 		socket_data * csock;
 		socket_data * ssock;
 	};
+
+	
+	extern Config config;
 #endif

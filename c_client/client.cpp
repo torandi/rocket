@@ -9,9 +9,9 @@
  */
 #define VERBOSE 3
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <string.h>
 #include <pthread.h>
 #include <sys/types.h>
@@ -23,12 +23,14 @@
 #include <limits.h>
 #include <vector>
 #include <math.h>
+#include <exception>
 
 #include "connection.h"
 #include "client.h"
 #include "gfx.h"
 #include "protocol.h"
 #include "ship.h"
+#include "config.h"
 
 #define CMP_BUFFER(s) strncmp(buffer,s,strlen(s))==0
 
@@ -62,12 +64,22 @@ socket_data * client_sock; //Socket connected to server
 std::vector<ship_t> ships;
 double last_frame;
 
+Config config(CONFIG_FILE);
+
 int main(int argc,char *argv[])
 {
 	for(int i=0;i<argc;++i) {
 		if(strcmp(argv[i],"-nox")==0)  {
 			nox=true;
 		}
+	}
+	
+	try {
+		server_hostname=config["server_hostname"];
+		server_port=atoi(config["server_port"].c_str());
+		local_port=atoi(config["local_port"].c_str());
+	} catch (std::exception &e) {
+		printf("Failed to read all data from config\n");
 	}
 
 	last_frame=get_time();
@@ -113,15 +125,15 @@ socket_data * init_server_connection(struct thread_data * td)
 
 	int port;
 	if(td->mode==MODE_GFX)
-		port=SERVER_GFX_PORT;
+		port=server_port;
 	else if(td->mode==MODE_BOT) 
-		port=SERVER_BOT_PORT;
+		port=server_port;
 	else {
 		fprintf(stderr,"Internal error: Unknown mode\n");
 		exit(2);
 	}
 
-	printf("Connecting to server %s:%i\n",SERVER_HOSTNAME,port);
+	printf("Connecting to server %s:%i\n",server_hostname.c_str(),port);
 
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
 	if(sockfd < 0) {
@@ -129,9 +141,9 @@ socket_data * init_server_connection(struct thread_data * td)
 		exit(-1);
 	}
 
-	server = gethostbyname(SERVER_HOSTNAME);
+	server = gethostbyname(server_hostname.c_str());
 	if(server==NULL) {
-		fprintf(stderr,"No such host %s\n",SERVER_HOSTNAME);
+		fprintf(stderr,"No such host %s\n",server_hostname.c_str());
 		exit(-1);
 	}
 
@@ -548,10 +560,10 @@ void * init_server(void * data)
      bzero((char *) &serv_addr, sizeof(serv_addr));
      serv_addr.sin_family = AF_INET;
      serv_addr.sin_addr.s_addr = INADDR_ANY;
-     serv_addr.sin_port = htons(CLIENT_PORT);
+     serv_addr.sin_port = htons(local_port);
      if (bind(server_sock, (struct sockaddr *) &serv_addr,
               sizeof(serv_addr)) < 0) {
-		  fprintf(stderr,"Error: Failed to bind socket to port %i\n",CLIENT_PORT);
+		  fprintf(stderr,"Error: Failed to bind socket to port %i\n",local_port);
 		  exit(1);
 	  }
  

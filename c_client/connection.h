@@ -2,16 +2,17 @@
 #define CONNECTION_H_
 
 #include <stddef.h>
-//#include "ssl.h"
+#include <string>
 
-#define SERVER_GFX_PORT 4711 //Port on botserver for gfx
-#define SERVER_BOT_PORT 4711 //Port on botserver for bots
-#define CLIENT_PORT 4710 //Port that bots will connect to localy
+//#define SERVER_PORT 4711 //Port on botserver for bots
+//#define CLIENT_PORT 4710 //Port that bots will connect to localy
 
 //#define SERVER_HOSTNAME "192.168.0.5"
-#define SERVER_HOSTNAME "localhost"
+//#define SERVER_HOSTNAME "localhost"
 //#define SERVER_HOSTNAME "10.0.0.114"
 //#define SERVER_HOSTNAME "10.0.0.2"
+
+
 
 typedef struct socket_data {
 	int socket;
@@ -37,6 +38,8 @@ void close_socket(socket_data ** sock);
 //Stops all sockets
 void terminate_sockets();
 
+extern int server_port,local_port;
+extern std::string server_hostname;
 extern int server_sock; //Socket listening for new connections
 extern socket_data * client_sock; //Socket connected to server
 #endif
