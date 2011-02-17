@@ -660,10 +660,18 @@ void calculate_interpolated_position(ship_t &ship, double delay) {
 }
 
 void check_bounds(ship_t &ship) {
-	if(ship._x < 0) ship._x = screen_width+ship._x; //x is already negtive!
-	if(ship._x > screen_width) ship._x = ship._x - screen_width;
-	if(ship._y < 0) ship._y = screen_height+ship._y; //y is already negtive!
-	if(ship._y > screen_height) ship._y  = ship._y - screen_height;
+	if(ship._x < 0) { 
+		ship._x = screen_width+ship._x; //x is already negtive!
+	}
+	if(ship._x > screen_width) {
+		ship._x = ship._x - screen_width;
+	}
+	if(ship._y < 0) {
+		ship._y = screen_height+ship._y; //y is already negtive!
+	}
+	if(ship._y > screen_height) { 
+		ship._y  = ship._y - screen_height;
+	}
 }
 
 /*
