@@ -11,7 +11,8 @@
 void terminate_sockets() {
 	if(server_sock!=0)
 		close(server_sock);
-	close_socket(&client_sock);
+	if(client_sock!=0)
+		close_socket(&client_sock);
 }
 
 /**

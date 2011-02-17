@@ -38,6 +38,8 @@
 #define BUFFER_SIZE 2048
 #define READ_SIZE 1024
 
+bool nox=false;
+
 socket_data * init_server_connection(struct thread_data * data);
 void * init_server_communication(void * data);
 void read_server(struct thread_data *td);
@@ -62,22 +64,35 @@ double last_frame;
 
 int main(int argc,char *argv[])
 {
+	for(int i=0;i<argc;++i) {
+		if(strcmp(argv[i],"-nox")==0)  {
+			nox=true;
+		}
+	}
+
 	last_frame=get_time();
-	struct thread_data td;
-	td.mode=MODE_GFX;
-	td.ssock=init_server_connection(&td);
-	td.csock=0;
-	client_sock=td.ssock;
+	if(!nox) {
+		struct thread_data td;
+		td.mode=MODE_GFX;
+		td.ssock=init_server_connection(&td);
+		td.csock=0;
+		client_sock=td.ssock;
 
-	if(td.ssock==0) 
-		exit(1);
+		if(td.ssock==0) 
+			exit(1);
 
-#if VERBOSE>=1
-	printf("GFX socket: %i\n",client_sock->socket);
-#endif
-	void * data = malloc(sizeof(td));
-	memcpy(data,&td,sizeof(td));
-	pthread_create(&client_t,NULL,init_server_communication,data);
+
+	#if VERBOSE>=1
+		printf("GFX socket: %i\n",client_sock->socket);
+	#endif
+		void * data = malloc(sizeof(td));
+		memcpy(data,&td,sizeof(td));
+		pthread_create(&client_t,NULL,init_server_communication,data);
+	} else {
+		printf("Display disabled\n");
+		client_sock=0;
+		pthread_create(&server_t,NULL,init_server,NULL);
+	}
 	//Make sure the sockets is closed on exit
 	atexit(&terminate_sockets);
 
@@ -580,9 +595,6 @@ void *new_client_thread(void *data) {
 		fprintf(stderr,"Couldn't connect to botserver\n");
 		return NULL;
 	}
-#if VERBOSE >= 1
-	printf("Client socket: %i\n",client_sock->socket);
-#endif
 	data=malloc(sizeof(td));
 	memcpy(data,&td,sizeof(td));
 
