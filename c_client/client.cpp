@@ -343,6 +343,7 @@ void read_server(struct thread_data *td) {
 				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
 				//Start server
 				pthread_create(&server_t,NULL,init_server,NULL);
+				goto parsing_done;
 			} else if(td->mode==MODE_BOT) {
 				//Start thread for forwardning from client->botserver
 				pthread_create(&client_thread_t,NULL,read_client,td);
@@ -453,6 +454,7 @@ void read_server(struct thread_data *td) {
 					}
 				}
 			} else if (CMP_BUFFER(PROT_SCORE)) {
+				printf("Got highscore\n");
 				score_t score;
 				int n=sscanf(buffer,PROT_SCORE_DATA,&score.id,score.nick,&score.score);
 				if(n==PROT_SCORE_DATA_ARGS) {
@@ -466,11 +468,12 @@ void read_server(struct thread_data *td) {
 					}
 					std::sort(highscore.begin(),highscore.end());
 					pthread_mutex_unlock(&highscore_lock);
-					printf("Got highscore\n");
 				} else {
 					fprintf(stderr,"Invalid data from gfx server (score had %i args, expected %i)\n",n,PROT_SCORE_DATA_ARGS);
 				}
 
+			} else {
+				fprintf(stderr,"Got unknown command: %s\n",buffer);
 			}
 		}
 
