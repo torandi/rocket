@@ -10,9 +10,11 @@
 
 	#define GFX_SCAN_SIZE 200
 
-	#define GFX_SERVER_FPS 10
+	#define GFX_SERVER_FPS 20
 	#define GFX_TARGET_FPS 100
 	#define GFX_FACTOR GFX_TARGET_FPS/GFX_SERVER_FPS
+
+	#define GFX_NUM_HIGHSCORE_ENTRIES 5
 
 	int init_sdl(int width,int height);
 	void quit_sdl();

@@ -14,6 +14,12 @@
 #define PROT_GFX_FRAME_STOP "frame stop"
 #define PROT_GFX_SHIP "ship"
 #define PROT_GFX_SHIP_DATA "ship %s %i %i %lf %f %s"
+#define PROT_GFX_SHIP_DATA_MIN_ARGS 5
+#define PROT_GFX_SHIP_DATA_ATTR_ARGS 6
+
+#define PROT_SCORE "score"
+#define PROT_SCORE_DATA "score %i %s %f"
+#define PROT_SCORE_DATA_ARGS 3
 
 #define PROT_GFX_ATTR_SHOOT "shoot"
 #define PROT_GFX_ATTR_BOOST "boost"

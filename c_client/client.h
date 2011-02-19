@@ -3,6 +3,8 @@
 
 #include "connection.h"
 #include "config.h"
+#include "score.h"
+#include <vector>
 
 	#define CONFIG_FILE "rocket.conf"
 
@@ -29,7 +31,7 @@
 		socket_data * csock;
 		socket_data * ssock;
 	};
-
 	
 	extern Config config;
+	extern std::vector<score_t> highscore;
 #endif

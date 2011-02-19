@@ -24,6 +24,7 @@
 #include <vector>
 #include <math.h>
 #include <exception>
+#include <algorithm>
 
 #include "connection.h"
 #include "client.h"
@@ -49,6 +50,7 @@ void * read_client(void *data);
 void *new_client_thread(void *data);
 void * init_server(void * data);
 void * gfx_hndl(void * data);
+std::vector<score_t>::iterator find_score(int id);
 double get_time();
 void calculate_interpolated_position(ship_t &ship, double delay);
 void check_bounds(ship_t &ship);
@@ -57,6 +59,7 @@ pthread_t sdl_event_t;
 pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
 pthread_mutex_t frame_lock=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t highscore_lock=PTHREAD_MUTEX_INITIALIZER;
 const double max_frame_age=0.5; //The max age of a frame in seconds
 
 int server_sock; //Socket listening for new connections
@@ -66,10 +69,10 @@ std::vector<ship_t> ships;
 double last_frame;
 
 Config config(CONFIG_FILE);
+std::vector<score_t> highscore;
 
 int main(int argc,char *argv[])
 {
-	
 	try {
 		server_hostname=config["server_hostname"];
 		server_port=atoi(config["server_port"].c_str());
@@ -414,8 +417,8 @@ void read_server(struct thread_data *td) {
 					bzero(ship.attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
 					
 					int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,attr_str);
-					if(n>=5) {
-						if(n==6) {
+					if(n>=PROT_GFX_SHIP_DATA_MIN_ARGS) {
+						if(n==PROT_GFX_SHIP_DATA_ATTR_ARGS) {
 	#if VERBOSE >= 5
 							printf("Attr: %s\n",attr_str);
 	#endif
@@ -446,9 +449,28 @@ void read_server(struct thread_data *td) {
 						frame.push_back(ship);
 						free(attr_org);
 					} else {
-						fprintf(stderr,"Invalid data from gfx server\n");
+						fprintf(stderr,"Invalid data from gfx server (ship had %i args, expected %i)\n",n,PROT_GFX_SHIP_DATA_MIN_ARGS);
 					}
 				}
+			} else if (CMP_BUFFER(PROT_SCORE)) {
+				score_t score;
+				int n=sscanf(buffer,PROT_SCORE_DATA,&score.id,score.nick,&score.score);
+				if(n==PROT_SCORE_DATA_ARGS) {
+					std::vector<score_t>::iterator s_it=find_score(score.id);
+					pthread_mutex_lock(&highscore_lock);
+					if(s_it!=highscore.end()) {
+						strcpy(s_it->nick,score.nick);
+						s_it->score=score.score;
+					} else {
+						highscore.push_back(score);
+					}
+					std::sort(highscore.begin(),highscore.end());
+					pthread_mutex_unlock(&highscore_lock);
+					printf("Got highscore\n");
+				} else {
+					fprintf(stderr,"Invalid data from gfx server (score had %i args, expected %i)\n",n,PROT_SCORE_DATA_ARGS);
+				}
+
 			}
 		}
 
@@ -643,6 +665,16 @@ void *new_client_thread(void *data) {
 	return NULL;
 }
 
+std::vector<score_t>::iterator find_score(int id) {
+	std::vector<score_t>::iterator it;
+	for(it=highscore.begin();it!=highscore.end();++it) {
+		if(it->id==id) {
+			return it;
+		}
+	}
+	return highscore.end();
+}
+
 void update_gfx() {
 	gfx_clear();
 	pthread_mutex_lock(&frame_lock);
@@ -651,8 +683,12 @@ void update_gfx() {
 		calculate_interpolated_position(*it,get_time()-last_frame);
 		draw_ship(*it);
 	}
-	gfx_update();
 	pthread_mutex_unlock(&frame_lock);
+
+	pthread_mutex_lock(&highscore_lock);
+	draw_highscore();
+	pthread_mutex_unlock(&highscore_lock);
+	gfx_update();
 }
 
 /**

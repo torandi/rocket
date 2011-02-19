@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <algorithm>
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 #include <SDL/SDL_image.h>
@@ -7,6 +8,7 @@
 #include <SDL/SDL_gfxPrimitives.h>
 
 #include "gfx.h"
+#include "client.h"
 #include "ship.h"
 
 #define PI 3.14159265
@@ -16,6 +18,7 @@
 #define FIRE_LENGTH 128
 
 #define NICK_FONT_SIZE 22
+#define HS_FONT_SIZE 16
 #define SMOOTH_ROTATION 0
 
 #define FONT_FILE "data/Acknowledge_TT_BRK.ttf"
@@ -27,11 +30,11 @@
 SDL_Surface *screen; 
 SDL_Event    event;
 SDL_Rect	screen_area;
-TTF_Font * font;
+TTF_Font * nick_font,*hs_font;
 SDL_Surface * ship,*ship_boost;
 SDL_Color font_color={0xFF,0xFF,0xFF};
 bool active=false;
-bool highscore=false;
+bool show_highscore=true;
 
 void slock();
 void sulock();
@@ -71,7 +74,8 @@ int init_sdl(int width, int height) {
 		return 2;
 	}
 
-	font=loadfont(FONT_FILE,NICK_FONT_SIZE);
+	nick_font=loadfont(FONT_FILE,NICK_FONT_SIZE);
+	hs_font=loadfont(FONT_FILE,HS_FONT_SIZE);
 
 	if ((screen =
 				SDL_SetVideoMode( screen_width, screen_height, 8, SDL_SWSURFACE ))
@@ -157,11 +161,11 @@ void draw_ship(const ship_t &s) {
 		aalineColor(screen,s._x,s._y,s._x+FIRE_LENGTH*cos(s.a),s._y-FIRE_LENGTH*sin(s.a),color);
 		
 
-	SDL_Surface *text_surface=TTF_RenderText_Blended(font,s.nick,font_color);
+	SDL_Surface *text_surface=TTF_RenderText_Blended(nick_font,s.nick,font_color);
 	text_rect.x=s._x-(2*strlen(s.nick)*NICK_FONT_SIZE)/7;
 	text_rect.y=s._y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
-	text_rect.w=screen_width;
-	text_rect.h=screen_height;
+	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
+	SDL_FreeSurface(text_surface);
 
 	if(s.attr[GFX_ATTR_SCAN]) {
 		circleColor(screen,s._x,s._y,GFX_SCAN_SIZE,scan_color1);
@@ -170,14 +174,10 @@ void draw_ship(const ship_t &s) {
 	if(s.attr[GFX_ATTR_BOOST])
 		cur_ship=ship_boost;
 
-	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
-	SDL_FreeSurface(text_surface);
 
 	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,radians_to_degrees(s.a),1.0,SMOOTH_ROTATION);
 	ship_pos.x=s._x-(rotated_ship->w/2);
 	ship_pos.y=s._y-(rotated_ship->h/2);
-	ship_pos.w=rotated_ship->w;
-	ship_pos.h=rotated_ship->h;
 	SDL_BlitSurface(rotated_ship,NULL,screen,&ship_pos);
 
 	SDL_FreeSurface(rotated_ship);
@@ -187,7 +187,24 @@ void draw_ship(const ship_t &s) {
 }
 
 void draw_highscore() {
+	if(show_highscore && highscore.size()>0) {
+		SDL_Rect text_rect;
+		SDL_Surface *text_surface=0;
 
+		text_rect.x=5;
+		text_rect.y=2;
+
+		char buffer[64];
+
+		for(int i=0;i<std::max((int)highscore.size(),GFX_NUM_HIGHSCORE_ENTRIES);++i) {
+			score_t s=highscore[i];
+			sprintf(buffer,"%i. %s: %.2f",i+1,s.nick,s.score);
+			text_surface=TTF_RenderText_Blended(hs_font,buffer,font_color);
+			SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
+			SDL_FreeSurface(text_surface);
+			text_rect.y+=HS_FONT_SIZE-4;
+		}
+	}
 }
 
 void gfx_update() {
@@ -208,10 +225,10 @@ void quit_sdl() {
 
 void toggle_highscore() {
 	if(active) {
-		if(!highscore) {
-			//request_highscore();
+		if(!show_highscore) {
+			show_highscore=true;
 		} else {
-			highscore=false;
+			show_highscore=false;
 		}
 	}
 }
