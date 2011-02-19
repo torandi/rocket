@@ -8,7 +8,7 @@ struct score_t {
 	float score;
 
 	bool operator<(const score_t &s) const {
-		return score<s.score;
+		return score>s.score;
 	};
 };
 

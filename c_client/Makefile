@@ -5,10 +5,10 @@ all: client
 client: protocol.o client.o gfx.o connection.o config.o
 	g++ ${LDFLAGS} ${CFLAGS}  -o client protocol.o client.o gfx.o connection.o config.o
 
-client.o: client.cpp connection.h gfx.h 
+client.o: client.cpp connection.h gfx.h score.h
 	g++ ${LDFLAGS} ${CFLAGS} -c -o client.o client.cpp
 
-gfx.o: gfx.cpp gfx.h
+gfx.o: gfx.cpp gfx.h score.h
 	g++ ${LDFLAGS} ${CFLAGS} -c -o gfx.o gfx.cpp
 
 connection.o: connection.cpp connection.h
