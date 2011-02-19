@@ -196,7 +196,7 @@ void draw_highscore() {
 
 		char buffer[64];
 
-		for(int i=0;i<std::max((int)highscore.size(),GFX_NUM_HIGHSCORE_ENTRIES);++i) {
+		for(int i=0;i<std::min((int)highscore.size(),GFX_NUM_HIGHSCORE_ENTRIES);++i) {
 			score_t s=highscore[i];
 			sprintf(buffer,"%i. %s: %.2f",i+1,s.nick,s.score);
 			text_surface=TTF_RenderText_Blended(hs_font,buffer,font_color);

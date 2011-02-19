@@ -443,7 +443,9 @@ void read_server(struct thread_data *td) {
 								} else if(strcmp(cur_attr,PROT_GFX_ATTR_SCAN)==0) {
 									ship.attr[GFX_ATTR_SCAN]=true;
 								} else {
+#if VERBOSE >= 3
 									fprintf(stderr,"Got unknown attribute %s\n",cur_attr);
+#endif
 								}
 							}
 						}
@@ -454,7 +456,6 @@ void read_server(struct thread_data *td) {
 					}
 				}
 			} else if (CMP_BUFFER(PROT_SCORE)) {
-				printf("Got highscore\n");
 				score_t score;
 				int n=sscanf(buffer,PROT_SCORE_DATA,&score.id,score.nick,&score.score);
 				if(n==PROT_SCORE_DATA_ARGS) {
