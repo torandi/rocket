@@ -6,12 +6,12 @@ class RocketShip < RocketItem
     @name = "n/a"
     @x = 200
     @y = 200
-    @boost = false
     @boost_ticker = 0
     @shoot = false
     @shoot_ticker = 0
     @angle = 0
-    @speed = 10.0
+    @speed = 5.0
+    @speed_mod = 1.0
     @dead = false
     @dead_ticker = 0
     @scan = false
@@ -20,10 +20,17 @@ class RocketShip < RocketItem
 
   def action
     r  = Array.new
-    r.push "boost" if @boost
+    r.push "boost" if boost?
     r.push "shoot" if @shoot
     r.push "scan" if @scan
     r.join ","
+  end
+  
+  def send_score uid, kill, death
+    death = 1.0 if death == 0.0
+    ratio = kill/death
+    puts "score #{uid} #{@name} #{ratio} #{kill} #{death}" if $verbose > 3
+    return "score #{uid} #{@name} #{ratio}"
   end
   
   def run
@@ -34,8 +41,8 @@ class RocketShip < RocketItem
       @shoot_ticker = 0
     end
 
-    if @boost_ticker > 10
-      @boost = false
+    if @boost_ticker > 20
+      boost false
       @boost_ticker = 0
     end
 
@@ -67,7 +74,7 @@ class RocketShip < RocketItem
     @y = SCREEN_SIZE[1] + @y if @y < 0
     
     @shoot_ticker+= 1 if @shoot
-    @boost_ticker+= 1 if @boost
+    @boost_ticker+= 1 if boost?
     @dead_ticker+= 1 if @dead
     @scan_ticker+= 1 if @scan
     
@@ -79,20 +86,21 @@ class RocketShip < RocketItem
   end
 
   def speed
-		@speed*speed_mod
+		@speed*@speed_mod
   end
   
-  def speed= n
-    @speed = n
-  end
-
-  def speed_mod
-    if @boost
-      speed_mod = 1.5
+  def boost b
+    if b
+      @speed_mod = 1.5
     else
-      speed_mod = 1.0
+      @speed_mod = 1.0
     end
   end
 
-  attr_accessor :item, :x, :y, :name, :boost, :shoot, :angle, :dead, :scan
+  def boost?
+    return true if @speed_mod == 1.5
+    false
+  end
+
+  attr_accessor :item, :x, :y, :name, :shoot, :angle, :dead, :scan, :speed_mod
 end

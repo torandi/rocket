@@ -5,6 +5,9 @@ class RktRobot
 	  puts "new rocketship"
 	  @c = client
 	  @pulse = Time.now.to_i
+	  
+	  uid = Time.now.to_i.to_s[5..9] # placeholder uid
+	  $score.push [uid, @ship, 0.0, 0.0]
 	end
 	
 	def client
@@ -49,8 +52,28 @@ class RktRobot
 	def ship
     @ship
   end
+  
+  def record_death s
+    $score.map! do |a| 
+      if a[1] == s
+        a = [a[0],a[1],a[2],(a[3]+1)]
+      else
+        a
+      end
+    end
+  end
 
-	# Commands
+  def record_kill s
+    $score.map! do |a| 
+       if a[1] == s
+        a = [a[0],a[1],(a[2]+1),a[3]]
+       else
+        a
+       end
+    end
+  end
+  
+ 	# Commands
 	
 	def cmd_name str
 	  @ship.name = str[0..10]
@@ -62,51 +85,75 @@ class RktRobot
 	end
 
   def cmd_shoot
+  
+    # Ship target radius
+    target_radius = 15
+    
+    # Fire length
+    fire_length = 120
+  
+    # Trigger shoot state
     @ship.shoot = true
     
+    # Loop thrue all enemy ships
     $items.each do |i|
     
+      # Ignore dead ships
       next if i.ship.dead?
     
-      xd = i.ship.x - @ship.x
-      yd = i.ship.y - @ship.y
-      dist = Math.sqrt(xd ** 2 + yd ** 2)
+      # Get enemy dela and dist
+      enemy_xd = i.ship.x - @ship.x
+      enemy_yd = i.ship.y - @ship.y
+      enemy_dist = Math.sqrt(enemy_xd ** 2 + enemy_yd ** 2)
       
-      if dist < 129 and dist > 1
-        enemy_angle = Math.atan2(yd, xd)
-        relative_angle = enemy_angle - @ship.angle
-        relative_angle = Math::PI - relative_angle if xd < 0
-        fire_dist = Math.sin(relative_angle) * dist
-        puts "#{fire_dist} #{dist} #{enemy_angle} #{relative_angle}"
-        if fire_dist < 16
-          puts "ship #{i.ship.name} is dead"
-          i.ship.dead = true
-          begin
-            i.client.puts "dead"
-          rescue Errno::EPIPE
-            # Connection is dead, remove robot
-            $items.delete i
-          end
+      # Ignore my self or to distant ships
+      next if enemy_dist == 0 or enemy_dist - target_radius > fire_length
+      
+      # Calculate angle to enemy (radians)
+      enemy_rad = Math.atan2(enemy_yd, enemy_xd)
+      enemy_rad = enemy_rad * Math::PI/2      if enemy_xd < 0 and enemy_yd > 0
+      enemy_rad = enemy_rad * -1              if enemy_xd < 0 and enemy_yd < 0
+      enemy_rad = enemy_rad * Math::PI/2 * -1 if enemy_xd > 0 and enemy_yd < 0
+      enemy_rad = 2*Math::PI - enemy_rad      if enemy_xd > 0 and enemy_yd > 0
+
+      # Calculate max and min angles
+      v_rad = Math.atan(target_radius/enemy_dist)
+      v1_rad = enemy_rad + v_rad
+      v2_rad = enemy_rad - v_rad
+
+      puts "#{i.ship.x} #{i.ship.y}" if $verbose > 2
+      puts "#{v1_rad} #{v2_rad}" if $verbose > 2
+      puts "#{enemy_rad} #{@ship.angle}" if $verbose > 2
+
+      if v1_rad > @ship.angle and @ship.angle > v2_rad
+        puts "ship #{i.ship.name} is dead"
+        i.ship.dead = true
+        record_kill @ship
+        record_death i.ship
+        begin
+          i.client.puts "dead"
+        rescue Errno::EPIPE
+          # Connection is dead, remove robot
+          $items.delete i  
         end
       end
     end
   end
   
   def cmd_boost
-    @ship.boost = true
-    cmd_start
+    @ship.boost true
   end
   
   def cmd_start
-    @ship.speed = 10
+    @ship.speed_mod = 1.0
   end
   
   def cmd_stop
-    @ship.speed = 0
+    @ship.speed_mod = 0.0
   end
   
   def cmd_toggle
-    return cmd_start if @ship.speed == 0
+    return cmd_start if @ship.speed == 0.0
     cmd_stop
   end
 
@@ -134,10 +181,10 @@ class RktRobot
       enemy_rad = 2*Math::PI - enemy_rad      if xd > 0 and yd > 0
 
       # Debug
-      puts "Enemy in quadriant 1"             if xd < 0 and yd > 0
-      puts "Enemy in quadriant 2"             if xd < 0 and yd < 0
-      puts "Enemy in quadriant 3"             if xd > 0 and yd < 0
-      puts "Enemy in quadriant 4"             if xd > 0 and yd > 0
+      puts "Enemy in quadriant 1"             if xd < 0 and yd > 0 and $verbose > 1
+      puts "Enemy in quadriant 2"             if xd < 0 and yd < 0 and $verbose > 1
+      puts "Enemy in quadriant 3"             if xd > 0 and yd < 0 and $verbose > 1
+      puts "Enemy in quadriant 4"             if xd > 0 and yd > 0 and $verbose > 1
       
       # convert to degres
       enemy_angle = enemy_rad * 180/Math::PI

@@ -8,12 +8,14 @@ require 'item'
 require 'ship'
 require 'rkt_display'
 require 'rkt_robot'
+require 'thread'
 
 Thread.abort_on_exception = true
 
 SCREEN_SIZE = [640, 480]
 
 $items = Array.new
+$score = Array.new
 $verbose = 0;
 
 # Main class
@@ -175,7 +177,7 @@ class RubyServer
   # Log funktion
   # TODO: Write this down to a log file.
   def log str
-    puts "RubyServer: #{str}"
+    puts "RubyServer: #{str}" if $verbose > 0
   end
 
 end
@@ -189,7 +191,7 @@ t = Thread.new do
 				$items.delete i
 			end
 		end
-		sleep 0.1
+		sleep 0.05
 	end
 end
 

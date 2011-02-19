@@ -45,8 +45,12 @@ class RktDisplay
         stop = send obj.output
       end
 
+	    $score.each do |s| 
+	      stop = send s[1].send_score(s[0], s[2], s[3])
+	    end
+
 			stop = send "frame stop"
-			sleep 0.1
+			sleep 0.05
 		end
 	end
 
