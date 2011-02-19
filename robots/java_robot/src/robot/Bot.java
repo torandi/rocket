@@ -34,7 +34,7 @@ public class Bot implements ClientInterface {
     }
 
     public String clientName() {
-        return "Torandbot"+id;
+        return "torandbot"+id;
     }
 
     public void ready() {
@@ -43,26 +43,25 @@ public class Bot implements ClientInterface {
     }
 
     public void noScanResult() {
-        System.out.println("");
         lastScan=null;
         inactive_ticks++;
         si.scan();
-        if(inactive_ticks>500) {
-            angle+=Math.PI/2;
+        if(inactive_ticks>100) {
+            angle+=Math.PI/4;
             si.rotate(angle);
+				si.boost();
             inactive_ticks=0;
         }
     }
 
     public void scanResult(RelativePostion rp) {
-
         inactive_ticks=0;
         if(lastScan==null) {
             lastScan=rp;
             error_ticks=0;
             chase_ticks=0;
             si.rotate(rp.angle);
-        } else if( error_ticks>7) {
+        } else if( error_ticks>10) {
             lastScan=null;
             si.scan();
             return;
@@ -76,7 +75,7 @@ public class Bot implements ClientInterface {
         }
         if(lastScan!=null) {
             if(lastScan.angle-rp.angle < Math.PI/4) {
-                if(chase_ticks>10) {
+                if(chase_ticks>5) {
                     si.boost();
                 } else {
                     chase_ticks++;

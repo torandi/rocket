@@ -16,11 +16,11 @@ public class RelativePostion {
         this.y = y;
     }
 
-    public RelativePostion(int x,int y) {
+    public RelativePostion(int angle, int dist) {
+		  this.angle=Math.toRadians(angle);
+		  x=(int)Math.round(Math.cos(angle)*dist);
+		  y=(int)Math.round(Math.sin(angle)*dist);
         dist=(int)Math.round(Math.sqrt(Math.pow(x,2)+Math.pow(y,2)));
-        angle=Math.atan2(y, x);
-        this.x = x;
-        this.y = y;
     }
 
     public RelativePostion diff(RelativePostion rp) {

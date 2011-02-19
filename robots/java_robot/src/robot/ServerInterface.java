@@ -81,6 +81,8 @@ public class ServerInterface implements XStreamParent {
             if(ready) {
                 if(data.trim().equals("dead")) {
                     ci.dead();
+					 }else if(data.trim().equals("alive")) {
+						 ci.noScanResult();
                 } else if(data.trim().startsWith("scan")){
                     data=data.trim().substring(5);
                     //Scanning resultat
@@ -92,8 +94,6 @@ public class ServerInterface implements XStreamParent {
                          ci.scanResult(new RelativePostion(Integer.parseInt(split[0].trim()),Integer.parseInt(split[1].trim())));
                        }
                     }
-                } else {
-                    System.out.println(data);
                 }
             }
         } catch (Exception e) {
