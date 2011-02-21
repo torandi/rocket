@@ -1,7 +1,5 @@
 # Rocket ruby server
 
-LISTEN_PORT = 4711
-
 require 'socket'
 require 'yaml'
 require 'item'
@@ -12,7 +10,13 @@ require 'thread'
 
 Thread.abort_on_exception = true
 
-SCREEN_SIZE = [640, 480]
+if ARGV.length < 2
+  puts "Error: <mapsize_x> <mapsize_y> [<listen_port>]"
+  exit 1
+end
+
+SCREEN_SIZE = [ARGV[0].to_i, ARGV[1].to_i]
+LISTEN_PORT = ARGV[2] ? ARGV[2].to_i : 4711
 
 $items = Array.new
 $score = Array.new
