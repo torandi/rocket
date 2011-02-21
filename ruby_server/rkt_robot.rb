@@ -200,7 +200,7 @@ class RktRobot
         puts "Shipt in 4th quadriant" if yd > 0 and xd > 0
       end
 
-      if dist < 200 and dist > 0
+      if dist < 400 and dist > 0
         @c.puts "scan #{enemy_angle.to_i} #{dist.to_i}"
         found = true
       end
