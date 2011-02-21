@@ -49,8 +49,8 @@ class RocketShip < RocketItem
     if @dead_ticker > 20
       @dead = false
       @dead_ticker = 0
-      @x = 200
-      @y = 200
+      @x = rand(SCREEN_SIZE[0])
+      @y = rand(SCREEN_SIZE[1])
 
       begin
         @client.puts "alive"
