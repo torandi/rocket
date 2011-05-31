@@ -1,0 +1,8 @@
+#!/bin/bash
+install_path="/usr/share/rocket"
+mkdir -p "$install_path/data"
+
+cp rocket.conf "$install_path/"
+cp rocket "/usr/local/bin/"
+cp -r data "$install_path/data/"
+echo "Install completed"

@@ -76,9 +76,11 @@ int main(int argc,char *argv[])
 	printf("RoBot Sockets v. %s\n",CLIENT_VERSION);
 	//Try some config files:
 	if(!config.open("rocket.conf")) {
-		if(!config.open("/usr/share/rocket/rocket.conf")) {
-			fprintf(stderr,"No rocket.conf found\n");
-			exit(-1);
+		if(!config.open(std::string(getenv("HOME"))+"/.rocket.conf")) {
+			if(!config.open("/usr/share/rocket/rocket.conf")) {
+				fprintf(stderr,"No rocket.conf found\n");
+				exit(-1);
+			}
 		}
 	}
 	try {

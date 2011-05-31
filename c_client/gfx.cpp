@@ -22,10 +22,13 @@
 #define SMOOTH_ROTATION 0
 
 #define FONT_FILE "data/Acknowledge_TT_BRK.ttf"
+#define FONT_FILE_SHARE "/usr/share/rocket/data/Acknowledge_TT_BRK.ttf"
 #define SHIP_GFX "data/ship.png"
+#define SHIP_GFX_SHARE "/usr/share/rocket/data/ship.png"
 #define SHIP_BOOST_GFX "data/ship_boost.png"
+#define SHIP_BOOST_GFX_SHARE "/usr/share/rocket/data/ship_boost.png"
 
-
+std::string ship_gfx, ship_boost_gfx, font_file;
 
 SDL_Surface *screen; 
 SDL_Event    event;
@@ -41,6 +44,7 @@ void sulock();
 int radians_to_degrees(double rad);
 
 int screen_width,screen_height;
+bool file_exists(const char * filename);
 
 TTF_Font* loadfont(const char* file, int ptsize);
 
@@ -74,8 +78,17 @@ int init_sdl(int width, int height) {
 		return 2;
 	}
 
-	nick_font=loadfont(FONT_FILE,NICK_FONT_SIZE);
-	hs_font=loadfont(FONT_FILE,HS_FONT_SIZE);
+	if(file_exists(FONT_FILE)) {
+		font_file=FONT_FILE;
+		ship_gfx = SHIP_GFX;
+		ship_boost_gfx = SHIP_BOOST_GFX;
+	} else {
+		font_file=FONT_FILE_SHARE;
+		ship_gfx = SHIP_GFX_SHARE;
+		ship_boost_gfx = SHIP_BOOST_GFX_SHARE;
+	}
+		nick_font=loadfont(font_file.c_str(),NICK_FONT_SIZE);
+		hs_font=loadfont(font_file.c_str(),HS_FONT_SIZE);
 
 	if ((screen =
 				SDL_SetVideoMode( screen_width, screen_height, 8, SDL_SWSURFACE ))
@@ -93,7 +106,7 @@ int init_sdl(int width, int height) {
 	SDL_ShowCursor( SDL_DISABLE );
 
 	//Load ship image
-	SDL_Surface * tmp=IMG_Load(SHIP_GFX);
+	SDL_Surface * tmp=IMG_Load(ship_gfx.c_str());
 	if(tmp==NULL) {
 		    printf("Error: Failed to load ship gfx (%s)\n", IMG_GetError());
 			 return 4;
@@ -102,7 +115,7 @@ int init_sdl(int width, int height) {
 	SDL_FreeSurface(tmp);
 
 	//Load ship boost image
-	tmp=IMG_Load(SHIP_BOOST_GFX);
+	tmp=IMG_Load(ship_boost_gfx.c_str());
 	if(tmp==NULL) {
 		    printf("Error: Failed to load ship boost gfx (%s)\n", IMG_GetError());
 			 return 4;
@@ -262,4 +275,12 @@ void sulock()
 	{
 		SDL_UnlockSurface(screen);
 	}
+}
+
+bool file_exists(const char * filename) {
+	if (FILE * file = fopen(filename, "r")) {
+		fclose(file);
+		return true;
+	}
+	return false;
 }

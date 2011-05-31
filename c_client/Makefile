@@ -22,3 +22,6 @@ config.o: config.cpp config.h
 
 clean:
 	rm protocol.o client.o gfx.o connection.o config.o rocket
+
+install: rocket
+	./install
