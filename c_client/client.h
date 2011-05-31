@@ -6,7 +6,7 @@
 #include "score.h"
 #include <vector>
 
-	#define CONFIG_FILE "rocket.conf"
+	#define CLIENT_VERSION "0.1 BETA"
 
 	typedef enum {
 		INIT=0,

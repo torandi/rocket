@@ -7,7 +7,7 @@
 #include <fstream>
 #include <istream>
 
-void Config::parse() {
+bool Config::parse() {
 	std::ifstream f(_file.c_str());
 	if(f.is_open()) {
 		std::string attr,value;
@@ -18,14 +18,22 @@ void Config::parse() {
 				_attr[attr]=value;
 			}
 		}
+		return true;
 	} else {
-		printf("Failed to open file %s\n",_file.c_str());
+		return false;
 	}
 }
+
+Config::Config() { }
 
 Config::Config(std::string file) : _file(file) {
 	_attr=std::map<std::string, std::string>();
 	parse();	
+}
+
+bool Config::open(std::string file) {
+	_file=file;
+	return parse();
 }
 
 std::string &Config::operator[](const std::string &attr) {

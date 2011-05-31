@@ -7,7 +7,7 @@
 9: Frame dropping debug info
 10: Socket input/outpu
  */
-#define VERBOSE 3
+#define VERBOSE 0
 
 #include <cstdlib>
 #include <unistd.h>
@@ -68,11 +68,19 @@ socket_data * client_sock; //Socket connected to server
 std::vector<ship_t> ships;
 double last_frame;
 
-Config config(CONFIG_FILE);
+Config config;
 std::vector<score_t> highscore;
 
 int main(int argc,char *argv[])
 {
+	printf("RoBot Sockets v. %s\n",CLIENT_VERSION);
+	//Try some config files:
+	if(!config.open("rocket.conf")) {
+		if(!config.open("/usr/share/rocket/rocket.conf")) {
+			fprintf(stderr,"No rocket.conf found\n");
+			exit(-1);
+		}
+	}
 	try {
 		server_hostname=config["server_hostname"];
 		server_port=atoi(config["server_port"].c_str());
@@ -270,7 +278,9 @@ void read_server(struct thread_data *td) {
 		//cversion
 		if(CMP_BUFFER(PROT_VERSION)) {
 			if(strcmp(buffer+strlen(PROT_VERSION)+1,"yes")==0) {
+#if VERBOSE >= 1
 				printf("Version good\n");
+#endif
 			} else if(strncmp(buffer+strlen(PROT_VERSION)+1,"ok",2)==0) {
 				const char * msg=buffer+strlen(PROT_VERSION)+4;
 				printf("Version ok\n%s\n",msg);
@@ -305,7 +315,9 @@ void read_server(struct thread_data *td) {
 						double server_time;
 						sscanf(buffer,"auth ok %lf",&server_time);
 						server_time_offset=local_time-server_time;
+#if VERBOSE >= 2
 						printf("Time offset to server: %f s\n",server_time_offset);
+#endif
 						auth_stage=AUTH_DONE;
 					} else {
 						fprintf(stderr,"Authorisation failed\n");
@@ -331,7 +343,9 @@ void read_server(struct thread_data *td) {
 				}
 			}
 		} else if(CMP_BUFFER(PROT_MODE_OK)) {
+#if VERBOSE >= 3
 			printf("mode accepted (%i)\n",td->mode);
+#endif
 			mode_ok=true;
 			//if gfx mode, start sdl
 			if(td->mode==MODE_GFX) {
@@ -627,9 +641,7 @@ void * init_server(void * data)
 	  pthread_attr_init(&thread_attr);
 	  pthread_attr_setdetachstate(&thread_attr,PTHREAD_CREATE_DETACHED);
 
-#if VERBOSE >= 1
-	  printf("Server is ready\n");
-#endif
+	  printf("Ready for bots. Listening on port %i\n",local_port);
 
 	  while(1) {
 		  listen(server_sock,5); //5 is the lenght of the queue for

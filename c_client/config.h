@@ -8,9 +8,11 @@ class Config {
 	std::map<std::string, std::string> _attr;
 	std::string _file;
 
-	void parse();
+	bool parse();
 	public:
+		Config();
 		Config(std::string file);
+		bool open(std::string file);
 
 		std::string &operator[](const std::string &attr);
 
