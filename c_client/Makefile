@@ -27,4 +27,4 @@ install: rocket
 	./install 
 
 deb:
-	dpkg-buildpackage
+	dpkg-buildpackage -b
