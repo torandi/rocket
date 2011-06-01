@@ -72,10 +72,10 @@ class RubyServer
 					if state == 0
 		        if check_version line
 		          state = 1
-		          client.puts "cversion yes"
+		          crypt client, "cversion yes"
 		          next
 		        else
-		          client.puts "cversion no"
+		          crypt client, "cversion no"
 		          client.close
 		          break
 		        end
@@ -85,11 +85,11 @@ class RubyServer
 					elsif state == 1
 						if line == "auth"
 							hash = (rand(8999)+1000).to_s
-							client.puts "auth " + hash
+							crypt client, "auth " + hash
 							state = 2
 							next
 						else
-							client.puts "invalid protocol, expected auth"
+							crypt client, "invalid protocol, expected auth"
 							log "invalid protocol (got: #{line}), expected auth"
 							client.close
 							break
@@ -103,11 +103,11 @@ class RubyServer
 						
 						if line.split[1].to_i == auth_sum
 							current_time = "%10.6f" % (Time.now).to_f
-							client.puts "auth ok #{current_time}"
+							crypt client, "auth ok #{current_time}"
 							state = 3
 							next
 						else
-							client.puts "auth no"
+							crypt client, "auth no"
 						end
 
           # State 3 - OK
@@ -119,7 +119,7 @@ class RubyServer
 						if line == "mode display"
 							log "mode display"
 							obj = RktDisplay.new client
-							client.puts "mode ok #{SCREEN_SIZE[0]} #{SCREEN_SIZE[1]}"
+							crypt client, "mode ok #{SCREEN_SIZE[0]} #{SCREEN_SIZE[1]}"
 							
 							# This is a display connection
 							# Run display loop
@@ -133,7 +133,7 @@ class RubyServer
 						elsif line == "mode bot"
 							log "mode robot"
 							obj = RktRobot.new client
-							client.puts "mode ok"
+							crypt client, "mode ok"
 							
 							log "New robot, addning to items"
 							$items.push obj
@@ -147,7 +147,7 @@ class RubyServer
 					else
 						# Invalid protocol
 						# Close connection and break loop
-						client.puts "invalid protocol"
+						crypt client, "invalid protocol"
 						client.close
 						break
 					end
@@ -170,12 +170,25 @@ class RubyServer
   # Read a line från a client
   def read client
   	begin
-	 		d = client.gets
+	 		d = decrypt client
 	 	rescue Errno::ECONNRESET
 	 		nil
 	 	end
 	 	return nil if not d 
 	 	d.chomp
+  end
+
+  def crypt client, str
+    crpt = str.bytes.map{ |a| (a^5).chr }.to_s
+    client.puts crpt
+    puts "crypt: #{str} -> #{crpt}"
+  end
+  
+  def decrypt client
+    crpt = client.gets
+    str = crpt.bytes.map{ |a| (a^5).chr }.to_s
+    puts "decrypt: #{crpt} -> #{str}"
+    str
   end
   
   # Log funktion

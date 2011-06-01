@@ -35,6 +35,7 @@ class RktDisplay
 	# Send data to client
 	def run
 	  stop = false
+	  last_time = 0
 	
 		while not stop do
 			frame_time = "%10.6f" % ((Time.now).to_f + @send_buffer_delay.to_f)
@@ -45,8 +46,11 @@ class RktDisplay
         stop = send obj.output
       end
 
-	    $score.each do |s| 
-	      stop = send s[1].send_score(s[0], s[2], s[3])
+	    $score.each do |s|
+	      if last_time < (Time.now).to_i - 5
+	        stop = send s[1].send_score(s[0], s[2], s[3])
+	        last_time = (Time.now).to_i
+	      end
 	    end
 
 			stop = send "frame stop"
