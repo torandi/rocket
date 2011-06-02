@@ -72,12 +72,24 @@ void write_secret(const socket_data * sock, const void * data,int len) {
 	} else {
 		char * buffer =(char*) malloc(FRAME_SIZE);
 		char hash[41];
+		char * garbage;
 		get_hash(hash,(char*)data,len);
 		buffer[0]=len;
 		memcpy(buffer+1,hash,HASH_SIZE);
 		if(len == 0)
 			len = PAYLOAD_SIZE;
-		memcpy(buffer+(FRAME_SIZE-(len+1)), data, len);
+		memcpy(buffer+(FRAME_SIZE-len), data, len);
+		//Fill the rest with random data:
+		for(garbage = buffer+1+HASH_SIZE;garbage < buffer + (FRAME_SIZE-len);++garbage) {
+			*garbage = rand() % 256;
+		}
+
+		#if VERBOSE >= 11	
+		printf("utdata: %i|%s\n",buffer[0],&buffer[1]);
+		for(int i=0;i<FRAME_SIZE;++i) {
+			printf("%i, ",buffer[i]);
+		}
+		#endif
 		encrypt(buffer,sock->key,FRAME_SIZE);
 		write_data(sock,buffer,FRAME_SIZE);
 		free(buffer);	
@@ -90,27 +102,43 @@ int read_data(const socket_data * sock,void * data,size_t len) {
 }
 
 int read_sck_line(const socket_data * sock,char * data) {
-	char buffer[FRAME_SIZE];
+	char buffer[FRAME_SIZE+1];
 	char * payload;
 	char * hash;
 	char size;
 	int n = 0;
 	bool cont=true;
+	buffer[FRAME_SIZE]=0;
 	while(cont) {
-		read_data(sock,buffer,FRAME_SIZE);
-		decrypt(buffer,sock->key,FRAME_SIZE);
-		if (buffer[0] == 0) {
-			size = PAYLOAD_SIZE + 1;
-		} else {
-			size = buffer[0] + 1;
+		int r = read_data(sock,buffer,FRAME_SIZE);
+		#if VERBOSE >= 11	
+			printf("indata: %i|%s\n",buffer[0],&buffer[1]);
+		#endif
+		if(r < 0) {
+			fprintf(stderr,"Connection closed\n");
+			exit(-1);
 		}
+		decrypt(buffer,sock->key,FRAME_SIZE);
+		cont = (buffer[0] == 0);
+		if (cont) {
+			size = PAYLOAD_SIZE;
+		} else {
+			size = buffer[0];
+		}
+		payload = buffer + (FRAME_SIZE - size);
 		hash = &buffer[1];
-		if(cmp_hash(hash,buffer,FRAME_SIZE)) {
-			payload = buffer + (FRAME_SIZE - size);
+		if(cmp_hash(hash,payload,size)) {
 			memcpy(data + n,payload,size);
 			n += size;
 		} else {
-			printf("Incorrect hash for frame: %s\n",buffer);
+			fprintf(stderr,"Incorrect hash for frame. Payload: %s. Data:\n",payload);
+			#if VERBOSE >= 11
+			for(int i=0;i<FRAME_SIZE;++i) {
+				printf("%i, ",buffer[i]);
+			}
+			#endif
+			data[0]=0;
+			exit(0);
 			return 0;
 		}
 	}
