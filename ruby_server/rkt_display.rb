@@ -21,9 +21,9 @@ class RktDisplay
     # Send from sendbuffer
     begin
       if @send_buffer_delay > 0
-  	    @c.puts((@send_buffer.shift)[1]) if Time.now.to_i >= (@send_buffer.first)[0]
+  	    Protocol.write @c, (@send_buffer.shift)[1] if Time.now.to_i >= (@send_buffer.first)[0]
   	  else
-    	  @c.puts str
+    	  Protocol.write @c, str
   	  end
   	  false
     rescue Exception=>e

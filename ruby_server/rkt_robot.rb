@@ -131,7 +131,7 @@ class RktRobot
         record_kill @ship
         record_death i.ship
         begin
-          i.client.puts "dead"
+          Protocol.write i.client, "dead"
         rescue Errno::EPIPE
           # Connection is dead, remove robot
           $items.delete i  
@@ -201,11 +201,11 @@ class RktRobot
       end
 
       if dist < 400 and dist > 0
-        @c.puts "scan #{enemy_angle.to_i} #{dist.to_i}"
+        Protocol.write @c, "scan #{enemy_angle.to_i} #{dist.to_i}"
         found = true
       end
     end
-    @c.puts "scan 0 0" if not found
+    Protocol.write @c, "scan 0 0" if not found
   end
   
   def cmd_verbose level

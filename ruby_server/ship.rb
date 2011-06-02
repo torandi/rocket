@@ -53,7 +53,7 @@ class RocketShip < RocketItem
       @y = rand(SCREEN_SIZE[1])
 
       begin
-        @client.puts "alive"
+        Protocol.write @client, "alive"
       rescue Errno::EPIPE
         # Robot is dead, remove robot
         false
