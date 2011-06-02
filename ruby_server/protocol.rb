@@ -12,7 +12,7 @@ class Protocol
           puts "recived nil"
           return nil
         end
-        frame = package #.bytes.map{ |a| (a^5).chr }.to_s
+        frame = package.bytes.map{ |a| (a^"5"[0]).chr }.to_s
         len = frame[0] # note, vid ruby 1.9 lägg på .ord
         hash = frame[1..4]
         payload = payload + frame[(32-(len == 0 ? 27 : len))..-1]
@@ -22,7 +22,7 @@ class Protocol
           return nil
         end
         chash = Digest::SHA1.hexdigest(payload)[0..3]
-        #package.bytes.each { |x| puts x }
+        package.bytes.each { |x| puts x }
         if chash != hash
           puts "error: hash missmatch package:#{hash} calc:#{chash}"
           return nil
@@ -46,10 +46,10 @@ class Protocol
       padding = (27-(len == 0 ? 27 : len)).times.map{ rand(9) }.join
       payload = str
       frame = "#{len.chr}#{hash}#{padding}#{payload}"
-      package = frame #.bytes.map{ |a| (a^5).chr }.to_s
+      package = frame.bytes.map{ |a| (a^"5"[0]).chr }.to_s
       client.write package
-      puts "ws: #{str}"
-      puts "wp:#{package}"
+      #puts "ws: #{str}"
+      #puts "wp:#{package}"
     end
   end
 
