@@ -84,13 +84,14 @@ void write_secret(const socket_data * sock, const void * data,int len) {
 			*garbage = rand() % 256;
 		}
 
+		encrypt(buffer,sock->key,FRAME_SIZE);
 		#if VERBOSE >= 11	
 		printf("utdata: %i|%s\n",buffer[0],&buffer[1]);
 		for(int i=0;i<FRAME_SIZE;++i) {
 			printf("%i, ",buffer[i]);
 		}
+		printf("\n");
 		#endif
-		encrypt(buffer,sock->key,FRAME_SIZE);
 		write_data(sock,buffer,FRAME_SIZE);
 		free(buffer);	
 	}
@@ -111,14 +112,14 @@ int read_sck_line(const socket_data * sock,char * data) {
 	buffer[FRAME_SIZE]=0;
 	while(cont) {
 		int r = read_data(sock,buffer,FRAME_SIZE);
-		#if VERBOSE >= 11	
-			printf("indata: %i|%s\n",buffer[0],&buffer[1]);
-		#endif
 		if(r < 0) {
 			fprintf(stderr,"Connection closed\n");
 			exit(-1);
 		}
 		decrypt(buffer,sock->key,FRAME_SIZE);
+		#if VERBOSE >= 11	
+			printf("indata: %i|%s\n",buffer[0],&buffer[1]);
+		#endif
 		cont = (buffer[0] == 0);
 		if (cont) {
 			size = PAYLOAD_SIZE;
@@ -147,13 +148,14 @@ int read_sck_line(const socket_data * sock,char * data) {
 }
 
 void decrypt(char * data, char * key, int len) {
-	//for(int n=0;n<len;++n) {
-	//	data[n] = data[n] ^ key[0];
-	//}
+	data[len+1]=0;
+	for(int n=0;n<len;++n) {
+		data[n] = data[n] ^ key[0];
+	}
 }
 
 void encrypt(char * data, char * key, int len) {
-	//decrypt(data,key,len);
+	decrypt(data,key,len);
 }
 
 void get_hash(char * hexstring,char * str, int len) {

@@ -14,8 +14,9 @@
 	7: Client forward output
 	9: Frame dropping debug info
 	10: Socket input/output
+	11: Encryption debug
 	 */
-	#define VERBOSE 10
+	#define VERBOSE 11
 
 
 	#define CLIENT_VERSION "0.1 BETA"
