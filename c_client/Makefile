@@ -2,8 +2,8 @@ LDFLAGS=-pthread -lSDL -lSDL_gfx -lSDL_ttf -lSDL_image
 CFLAGS = -g -Wall
 
 all: rocket
-rocket: protocol.o client.o gfx.o connection.o config.o
-	g++ ${LDFLAGS} ${CFLAGS}  -o rocket protocol.o client.o gfx.o connection.o config.o
+rocket: protocol.o client.o gfx.o connection.o config.o sha1.o
+	g++ ${LDFLAGS} ${CFLAGS}  -o rocket protocol.o client.o gfx.o connection.o config.o sha1.o
 
 client.o: client.cpp connection.h gfx.h score.h
 	g++ ${LDFLAGS} ${CFLAGS} -c -o client.o client.cpp
@@ -19,6 +19,9 @@ protocol.o: protocol.cpp protocol.h
 
 config.o: config.cpp config.h
 	g++ ${LDFLAGS} ${CFLAGS} -c -o config.o config.cpp
+
+sha1.o: sha1.h sha1.cpp
+	g++ ${LDFLAGS} ${CFLAGS} -c -o sha1.o sha1.cpp
 
 clean:
 	rm protocol.o client.o gfx.o connection.o config.o rocket

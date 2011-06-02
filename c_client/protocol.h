@@ -1,3 +1,7 @@
+#ifndef PROTOCOL_H_
+#define PROTOCOL_H_
+#include "connection.h"
+
 /** protcol contains all the server-client protocol */
 
 #define VERSION "0.1"
@@ -32,3 +36,6 @@
 
 /* Calculates the authkey from an authcode */
 int protocol_authorize(const char * n);
+
+
+#endif

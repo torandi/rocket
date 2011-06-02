@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "connection.h"
 
 int char_to_int(char c) {
 	return c-0x30;

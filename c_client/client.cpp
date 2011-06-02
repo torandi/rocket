@@ -1,14 +1,3 @@
-//Verbose level: 0: nothing, 1: something 2-9: some more 10: All + all input/output from socket
-/*
-1: Server sync, server init info, frame dropping occurances
-2: Socket ready info, client disconnect info
-5: Information about gfx attributes
-7: Client forward output
-9: Frame dropping debug info
-10: Socket input/outpu
- */
-#define VERBOSE 0
-
 #include <cstdlib>
 #include <unistd.h>
 #include <cstdio>
@@ -38,8 +27,7 @@
 //If more than this number of frames are dropped or negative, resync offset
 #define MAX_WRONG_FRAMES 10
 
-#define BUFFER_SIZE 2048
-#define READ_SIZE 1024
+#define BUFFER_SIZE 1024
 
 bool nox=false;
 
@@ -203,7 +191,7 @@ socket_data * init_server_connection(struct thread_data * td)
 		printf("Connected to server\n");
 	}
 	
-	return init_socket(sockfd,1);
+	return init_socket(sockfd,true);
 
 }
 
@@ -233,11 +221,7 @@ void * init_server_communication(void * data) {
  */
 void read_server(struct thread_data *td) {
 	char * buffer = (char*) calloc(BUFFER_SIZE,sizeof(int)); //readbuffer
-	char * buffer2 = NULL; //readbuffer
-	char * data=NULL; //data to parse
-	char * next_newline=NULL;
 	bool run=true;
-	char * next_write=buffer; //next position in buffer to write to
 	auth_stage_t auth_stage=AUTH_UNINITIALIZED;
 	bool mode_ok=false;
 	bool active_frame=false;
@@ -251,27 +235,13 @@ void read_server(struct thread_data *td) {
 	pthread_t client_thread_t; //The client thread
 
 	while(run) {
-		int n;
 
-
-		while(next_newline==NULL) {
-			n=read_data(td->ssock,next_write,READ_SIZE);
-			if(n<=0) {
-				run=false;
-				break;
-			}
-			next_newline=strchr(buffer,'\n');
-			next_write+=n;
-		}
+		read_sck_line(td->ssock,buffer);
 		if(!run)
 			break;
 		
-		data=buffer;
-		//Set the char at next_newline to \0
-		*next_newline=0;
-
 #if VERBOSE >= 10
-		printf(">>%s\n",data);
+		printf(">>%s\n",buffer);
 #endif
 
 		double local_time=get_time();
@@ -359,7 +329,7 @@ void read_server(struct thread_data *td) {
 				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
 				//Start server
 				pthread_create(&server_t,NULL,init_server,NULL);
-				goto parsing_done;
+				continue;
 			} else if(td->mode==MODE_BOT) {
 				//Start thread for forwardning from client->botserver
 				pthread_create(&client_thread_t,NULL,read_client,td);
@@ -368,7 +338,7 @@ void read_server(struct thread_data *td) {
 				printf("Bot socket ready\n");
 #endif
 				writeln(td->csock,PROT_BOT_READY,sizeof(PROT_BOT_READY));
-				goto parsing_done; //jump to parsing done (to prevent forwarding "mode ok")
+				continue;
 			}
 		}
 
@@ -404,9 +374,6 @@ void read_server(struct thread_data *td) {
 #if VERBOSE >= 1 
 					printf("Dropping frame! %lf s old.\n",age);
 #endif
-					//Drop data in buffer
-					next_write=NULL;
-
 					if(++ignored_frames>MAX_WRONG_FRAMES) {
 						//Resync!
 						age=local_time-server_time;
@@ -416,7 +383,7 @@ void read_server(struct thread_data *td) {
 						printf("Resynced offset to server. New offset: %lf s\n",age);
 #endif
 					}
-					goto parsing_done;
+					continue;
 				}
 			} else if(CMP_BUFFER(PROT_GFX_FRAME_STOP)) {
 				if(active_frame) {
@@ -503,7 +470,7 @@ void read_server(struct thread_data *td) {
 		 */
 		if(td->mode==MODE_BOT && mode_ok) {
 			//Forward data
-			writeln(td->csock,data,strlen(data)+1);
+			writeln(td->csock,buffer,strlen(buffer));
 		}
 		/*
 		 * End BOT mode
@@ -511,26 +478,6 @@ void read_server(struct thread_data *td) {
 
 		
 
-parsing_done:
-		//parsing done
-		//increase next_newline since we only are intrested in the byte after now
-		next_newline++;
-		//If next_write>next_newline there is remaining data in the buffer
-		if(next_write>next_newline) {
-			//keep remaining data in buffer
-			buffer2=(char*)calloc(BUFFER_SIZE,sizeof(int));
-			memcpy(buffer2,next_newline,next_write-next_newline);
-			free(buffer);
-			buffer=buffer2;
-			next_write=buffer2+(next_write-next_newline);
-			next_newline=strchr(buffer,'\n'); //Find next newline in buffer (or NULL if cont to read)
-			//printf("Moved around in buffer, is now: %s\n",buffer); 
-		} else {
-			free(buffer);
-			buffer=(char*)calloc(1024,sizeof(int));
-			next_write=buffer;
-			next_newline=NULL;
-		}
 	}
 
 #if VERBOSE>=1
@@ -564,13 +511,13 @@ parsing_done:
 void * read_client(void * data) {
 	struct thread_data *td=(struct thread_data*)data;
 
-	char * buffer = (char*)calloc(1024,sizeof(int)); //readbuffer
+	char * buffer = (char*)malloc(1024); //readbuffer
 	bool run=true;
 
 	while(run) {
 		int n;
 
-		n=read_data(td->csock,buffer,1024);
+	n=read_data(td->csock,(void*)buffer,64);
 		if(n<=0) {
 			run=false;
 			break;
@@ -585,7 +532,7 @@ void * read_client(void * data) {
 #if VERBOSE >= 7
 		printf("Forwarded: %s",buffer);
 #endif
-		write_data(td->ssock,buffer,n);
+		writeln(td->ssock,buffer,n);
 	}
 
 #if VERBOSE >=1 
@@ -670,7 +617,7 @@ void *new_client_thread(void *data) {
 
 	struct thread_data td;
 	td.mode=MODE_BOT;
-	td.csock=init_socket(sock,0);
+	td.csock=init_socket(sock,false);
 	td.ssock=init_server_connection(&td);
 	if(td.ssock==0) {
 		fprintf(stderr,"Couldn't connect to botserver\n");
