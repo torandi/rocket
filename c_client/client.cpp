@@ -512,15 +512,34 @@ void * read_client(void * data) {
 	struct thread_data *td=(struct thread_data*)data;
 
 	char * buffer = (char*)malloc(1024); //readbuffer
+	char * next_read = buffer;
+	char * next_newline = NULL;
+	char * pos = buffer;
 	bool run=true;
 
 	while(run) {
 		int n;
-
-	n=read_data(td->csock,(void*)buffer,64);
-		if(n<=0) {
-			run=false;
-			break;
+		while(next_newline == NULL) {
+			int len = next_read-buffer;
+			if( (1024 - len) < 32) {
+				//Not enough space in buffer, move!
+				if(next_read == buffer) { //Eh.. lol?
+					buffer[1023]=0;
+					fprintf(stderr,"Receiving to large message from client, dropping (was %s)\n",buffer);
+					n = 0;
+					break;
+				}  else {
+					memcpy(buffer,next_read,len);
+					next_read=buffer;
+				}
+			}
+			n=read_data(td->csock,(void*)next_read,32);
+			if(n<=0) {
+				run=false;
+				break;
+			}
+			next_newline = strchr(buffer,'\n');
+			next_read+=n;
 		}
 		if(CMP_BUFFER(PROT_CLOSE)) {
 #if VERBOSE >= 2
@@ -528,11 +547,13 @@ void * read_client(void * data) {
 #endif
 			break;
 		}
-		//Forward data
 #if VERBOSE >= 7
 		printf("Forwarded: %s",buffer);
 #endif
-		writeln(td->ssock,buffer,n);
+		//Forward data
+		writeln(td->ssock,pos,(next_newline-pos));
+		pos = next_newline+1;
+		next_newline = NULL;
 	}
 
 #if VERBOSE >=1 
