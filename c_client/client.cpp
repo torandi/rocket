@@ -48,6 +48,7 @@ pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
 pthread_mutex_t frame_lock=PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t highscore_lock=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gfx_draw_lock=PTHREAD_MUTEX_INITIALIZER;
 const double max_frame_age=0.5; //The max age of a frame in seconds
 
 int server_sock; //Socket listening for new connections
@@ -236,8 +237,8 @@ void read_server(struct thread_data *td) {
 
 	while(run) {
 
-		read_sck_line(td->ssock,buffer);
-		if(!run)
+		int n = read_sck_line(td->ssock,buffer);
+		if(!run || n<0)
 			break;
 		
 #if VERBOSE >= 10
@@ -497,6 +498,9 @@ void read_server(struct thread_data *td) {
 
 	if(td->mode==MODE_GFX && mode_ok) {
 		pthread_join(client_thread_t,NULL);
+		pthread_mutex_lock(&gfx_draw_lock);
+		quit_sdl();
+		exit(0);
 	}
 
 
@@ -511,49 +515,64 @@ void read_server(struct thread_data *td) {
 void * read_client(void * data) {
 	struct thread_data *td=(struct thread_data*)data;
 
-	char * buffer = (char*)malloc(1024); //readbuffer
+	char * buffer = (char*)malloc(BUFFER_SIZE); //readbuffer
 	char * next_read = buffer;
 	char * next_newline = NULL;
-	char * pos = buffer;
 	bool run=true;
 
 	while(run) {
-		int n;
-		while(next_newline == NULL) {
-			int len = next_read-buffer;
-			if( (1024 - len) < 32) {
-				//Not enough space in buffer, move!
-				if(next_read == buffer) { //Eh.. lol?
-					buffer[1023]=0;
-					fprintf(stderr,"Receiving to large message from client, dropping (was %s)\n",buffer);
-					n = 0;
-					break;
-				}  else {
-					memcpy(buffer,next_read,len);
-					next_read=buffer;
-				}
-			}
-			n=read_data(td->csock,(void*)next_read,32);
+
+		int n = (next_read - buffer);
+		next_newline = strchr(buffer,'\n');
+		if(next_newline == NULL) {
+			n+=read_data(td->csock,(void*)next_read,BUFFER_SIZE-n);
+			printf("Read: %s\n",next_read);
+			
 			if(n<=0) {
 				run=false;
 				break;
 			}
+			//Find next newline
 			next_newline = strchr(buffer,'\n');
-			next_read+=n;
 		}
+
 		if(CMP_BUFFER(PROT_CLOSE)) {
 #if VERBOSE >= 2
 			printf("Client closed connection\n");
 #endif
 			break;
 		}
-#if VERBOSE >= 7
-		printf("Forwarded: %s",buffer);
-#endif
+	
+		if(next_newline == NULL) {
+			if(n == BUFFER_SIZE) {
+				run = false;
+				break;
+			} else {
+				next_read = buffer + n;
+				continue;
+			}
+		} else {
+			*next_newline = 0; //For output
+		}
+
 		//Forward data
-		writeln(td->ssock,pos,(next_newline-pos));
-		pos = next_newline+1;
-		next_newline = NULL;
+		int len = (next_newline-buffer);
+		if(len > 0) {
+#if VERBOSE >= 7
+			printf("Forwarded:(%i) %s\n",len,buffer);
+#endif
+			writeln(td->ssock,buffer,len);
+		}
+		++len; //Now include newline in lenght
+		if(len < n) {
+			memcpy(buffer,next_newline+1,n-len);
+			#if VERBOSE >= 6
+				printf("Client forward: %i bytes left in buffer\n",n-len);
+			#endif
+			next_read = buffer + (n - len);
+		} else {
+			next_read = buffer;
+		}
 	}
 
 #if VERBOSE >=1 
@@ -707,7 +726,9 @@ void check_bounds(ship_t &ship) {
  */
 void * gfx_hndl(void * data) {
 	while(1) {
+		pthread_mutex_lock(&gfx_draw_lock);
 		update_gfx();
+		pthread_mutex_unlock(&gfx_draw_lock);
 		if(hndl_sdl_events()!=0){
 			exit(0);
 		}

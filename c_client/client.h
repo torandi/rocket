@@ -6,11 +6,12 @@
 #include "score.h"
 #include <vector>
 
-	//Verbose level: 0: nothing, 1: something 2-9: some more 10: All + all input/output from socket
+	//Verbose level: 0: nothing, 1: something 2-9: some more 11: All + all input/output from socket + encryption debug
 	/*
 	1: Server sync, server init info, frame dropping occurances
 	2: Socket ready info, client disconnect info
 	5: Information about gfx attributes
+	6: Info about buffer memory
 	7: Client forward output
 	9: Frame dropping debug info
 	10: Socket input/output

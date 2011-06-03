@@ -48,20 +48,23 @@ void write_data(const socket_data * sock,const void * data,int len) {
 	}
 }
 
-/* Sends data through socket with newline*/
 void writeln(const socket_data * sock,const void * data,int len) {
+	if(sock == NULL) 
+		return;
+		
 #if VERBOSE >=10
 	printf("<<%s\n",(char*) data); 
 #endif
 	if(!sock->secure) {
-		char * senddata = (char*)malloc(len+1);
-		memcpy(senddata,data,len-1);
+		char * senddata = (char*)malloc(++len);
+		memcpy(senddata,data,len);
 		senddata[len-1]=0xA; //newline
-		senddata[len]=0; //Nullchar
 		write_data(sock,senddata,len); //Send the data
 		free(senddata);
 	} else {
-		write_secret(sock,data,len-1); //Remove null-char
+		if(((char*)data)[len-1]==0)
+			--len; //Remove nullchar
+		write_secret(sock,data,len);
 	}
 }
 
@@ -98,6 +101,8 @@ void write_secret(const socket_data * sock, const void * data,int len) {
 }
 
 int read_data(const socket_data * sock,void * data,size_t len) {
+	if(sock == NULL)
+		return -1;
 	int ret = read(sock->socket,data,len);
 	return ret;
 }
@@ -110,11 +115,20 @@ int read_sck_line(const socket_data * sock,char * data) {
 	int n = 0;
 	bool cont=true;
 	buffer[FRAME_SIZE]=0;
+
+	if(sock == NULL) {
+		data[0] = 0;
+		return -1;
+	}
+
 	while(cont) {
 		int r = read_data(sock,buffer,FRAME_SIZE);
-		if(r < 0) {
-			fprintf(stderr,"Connection closed\n");
-			exit(-1);
+		if(r <= 0) {
+			#if VERBOSE>=2
+				printf("Disconnected in read_sck_line\n");
+			#endif
+			data[0] = 0;
+			return -1;
 		}
 		decrypt(buffer,sock->key,FRAME_SIZE);
 		#if VERBOSE >= 11	
@@ -132,14 +146,15 @@ int read_sck_line(const socket_data * sock,char * data) {
 			memcpy(data + n,payload,size);
 			n += size;
 		} else {
-			fprintf(stderr,"Incorrect hash for frame. Payload: %s. Data:\n",payload);
+		#if VERBOSE >=2
+				fprintf(stderr,"Incorrect hash for frame. Payload: %s. Data:\n",payload);
+			#endif
 			#if VERBOSE >= 11
-			for(int i=0;i<FRAME_SIZE;++i) {
-				printf("%i, ",buffer[i]);
-			}
+				for(int i=0;i<FRAME_SIZE;++i) {
+					printf("%i, ",buffer[i]);
+				}
 			#endif
 			data[0]=0;
-			exit(0);
 			return 0;
 		}
 	}
