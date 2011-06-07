@@ -22,7 +22,7 @@ class Protocol
           return nil
         end
         chash = Digest::SHA1.hexdigest(payload)[0..3]
-        package.bytes.each { |x| puts x }
+        #package.bytes.each { |x| puts x }
         if chash != hash
           puts "error: hash missmatch package:#{hash} calc:#{chash}"
           return nil
