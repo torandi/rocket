@@ -1,4 +1,4 @@
-LDFLAGS=-pthread -lSDL -lSDL_gfx -lSDL_ttf -lSDL_image
+LDFLAGS=-pthread -lSDL -lSDL_ttf -lSDL_image -lGL -lglut
 CFLAGS = -g -Wall
 
 all: rocket
@@ -28,6 +28,9 @@ clean:
 
 install: rocket
 	./install 
+
+gfx: gfx.cpp
+	g++ ${LDFLAGS} ${CFLAGS} -o gfx gfx.cpp
 
 deb:
 	dpkg-buildpackage -b

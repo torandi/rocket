@@ -38,12 +38,14 @@ void * read_client(void *data);
 void *new_client_thread(void *data);
 void * init_server(void * data);
 void * gfx_hndl(void * data);
+void * start_gfx(void * data);
 std::vector<score_t>::iterator find_score(int id);
 double get_time();
 void calculate_interpolated_position(ship_t &ship, double delay);
 void check_bounds(ship_t &ship);
 
-pthread_t sdl_event_t;
+pthread_t update_gfx_t;
+pthread_t event_t; //Thread for glut window
 pthread_t server_t; //Thread for handling clients
 pthread_t client_t; //Thread for communicating with server
 pthread_mutex_t frame_lock=PTHREAD_MUTEX_INITIALIZER;
@@ -320,14 +322,15 @@ void read_server(struct thread_data *td) {
 			printf("mode accepted (%i)\n",td->mode);
 #endif
 			mode_ok=true;
-			//if gfx mode, start sdl
+			//if gfx mode, start gfx
 			if(td->mode==MODE_GFX) {
-				int screen_width,screen_heigth;
-				sscanf(buffer,PROT_MODE_OK_GFX,&screen_width,&screen_heigth);
-				//init sdl
-				init_sdl(screen_width,screen_heigth);
+				int screen_width, screen_height;
+				sscanf(buffer,PROT_MODE_OK_GFX,&screen_width,&screen_height);
+				//init graphics
+				init_gfx(screen_width,screen_height);
+				pthread_create(&event_t,NULL,start_gfx,NULL);
 				//Thread for handling sdl events
-				pthread_create(&sdl_event_t,NULL,gfx_hndl,NULL);
+				pthread_create(&update_gfx_t,NULL,gfx_hndl,NULL);
 				//Start server
 				pthread_create(&server_t,NULL,init_server,NULL);
 				continue;
@@ -499,7 +502,7 @@ void read_server(struct thread_data *td) {
 	if(td->mode==MODE_GFX && mode_ok) {
 		pthread_join(client_thread_t,NULL);
 		pthread_mutex_lock(&gfx_draw_lock);
-		quit_sdl();
+		stop_gfx();
 		exit(0);
 	}
 
@@ -729,11 +732,14 @@ void * gfx_hndl(void * data) {
 		pthread_mutex_lock(&gfx_draw_lock);
 		update_gfx();
 		pthread_mutex_unlock(&gfx_draw_lock);
-		if(hndl_sdl_events()!=0){
-			exit(0);
-		}
 		usleep(1000/GFX_TARGET_FPS);
 	}
+	return NULL;
+}
+
+void * start_gfx(void * data) {
+	start_event_loop();
+	return NULL;
 }
 
 double get_time() {

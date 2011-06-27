@@ -16,12 +16,9 @@
 
 	#define GFX_NUM_HIGHSCORE_ENTRIES 5
 
-	int init_sdl(int width,int height);
-	void quit_sdl();
-	/*
-	 * Returns 1 if the user wants to quit
-	 */
-	int hndl_sdl_events();
+	void init_gfx(int width,int height); 
+	void start_event_loop();
+	void stop_gfx();
 	void draw_ship(const ship_t &ship);
 	void draw_highscore();
 	void gfx_update();

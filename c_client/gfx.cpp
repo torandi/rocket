@@ -1,25 +1,17 @@
 #include <stdio.h>
-#include <math.h>
-#include <algorithm>
+#include <stdlib.h>
+
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
 #include <SDL/SDL.h>
-#include <SDL/SDL_ttf.h>
 #include <SDL/SDL_image.h>
-#include <SDL/SDL_rotozoom.h>
-#include <SDL/SDL_gfxPrimitives.h>
+
+#include <string.h>
 
 #include "gfx.h"
 #include "client.h"
 #include "ship.h"
-
-#define PI 3.14159265
-
-#define SHIP_SIZE 32
-#define HALF_SHIP_SIZE SHIP_SIZE/2
-#define FIRE_LENGTH 128
-
-#define NICK_FONT_SIZE 22
-#define HS_FONT_SIZE 16
-#define SMOOTH_ROTATION 0
 
 #define FONT_FILE "data/Acknowledge_TT_BRK.ttf"
 #define FONT_FILE_SHARE "/usr/share/rocket/data/Acknowledge_TT_BRK.ttf"
@@ -28,55 +20,48 @@
 #define SHIP_BOOST_GFX "data/ship_boost.png"
 #define SHIP_BOOST_GFX_SHARE "/usr/share/rocket/data/ship_boost.png"
 
-std::string ship_gfx, ship_boost_gfx, font_file;
+#define SHIP_SIZE 32.0f
+#define FIRE_LENGTH 128.0f
 
-SDL_Surface *screen; 
-SDL_Event    event;
-SDL_Rect	screen_area;
-TTF_Font * nick_font,*hs_font;
-SDL_Surface * ship,*ship_boost;
-SDL_Color font_color={0xFF,0xFF,0xFF};
+#define NICK_FONT_SIZE 22.0f
+#define HS_FONT_SIZE 16.0f
+
 bool active=false;
 bool show_highscore=true;
+int screen_width, screen_height;
 
-void slock();
-void sulock();
-int radians_to_degrees(double rad);
-
-int screen_width,screen_height;
+std::string ship_gfx, ship_boost_gfx, font_file;
 bool file_exists(const char * filename);
+GLuint load_texture(const char* file);
+void hndl_event(unsigned char key, int x, int y);
 
-TTF_Font* loadfont(const char* file, int ptsize);
+ship_t s;
+GLuint ship, ship_boost;
 
-/*
-void main() {
-	init_sdl();
-	while(1) {
-	draw_ship("Torandi",100,100,45,NULL,0);
-	gfx_update();
-		if(hndl_sdl_events()!=0) {
-			break;
-			exit(0);
-		}
-		sleep(100);
-	}
-}*/
+void init(int w, int h) {
+	glClearColor(0,0,0,0);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0,w,h,0,-1,1);
+	glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_FLAT);
 
-int init_sdl(int width, int height) {
-	screen_width=width;
-	screen_height=height;
-	printf("Screen size: %ix%i\n",screen_width,screen_height);
-	if (SDL_Init( SDL_INIT_VIDEO ) != 0) {
+	glEnable (GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
 
-		fprintf( stderr, "Could not initialise SDL: %s\n", SDL_GetError() );
-		return 1;
+void init_gfx(int width, int height) {
+	int zero = 0;
+	glutInit(&zero,NULL);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitWindowSize(width, height);
+	glutInitWindowPosition(100, 100);
+	glutCreateWindow( "Rocket - Robot Sockets");
 
-	} // if (could not init video)
+	screen_width = width;
+	screen_height = height;
 
-	if (TTF_Init() == -1) {
-		fprintf(stderr,"Unable to initialize SDL_ttf: %s \n", TTF_GetError());
-		return 2;
-	}
+	init(width,height);
 
 	if(file_exists(FONT_FILE)) {
 		font_file=FONT_FILE;
@@ -87,120 +72,89 @@ int init_sdl(int width, int height) {
 		ship_gfx = SHIP_GFX_SHARE;
 		ship_boost_gfx = SHIP_BOOST_GFX_SHARE;
 	}
-		nick_font=loadfont(font_file.c_str(),NICK_FONT_SIZE);
-		hs_font=loadfont(font_file.c_str(),HS_FONT_SIZE);
 
-	if ((screen =
-				SDL_SetVideoMode( screen_width, screen_height, 8, SDL_SWSURFACE ))
-			== NULL) {
+	ship=load_texture(ship_gfx.c_str());
+	ship_boost=load_texture(ship_boost_gfx.c_str());
 
-		fprintf( stderr, "Could not set SDL video mode: %s\n", SDL_GetError() );
-		return 3;
-	} // if (could not set mode)
-	screen_area.x=0;
-	screen_area.y=0;
-	screen_area.w=screen_width;
-	screen_area.h=screen_height;
-
-	SDL_WM_SetCaption( "Rocket - Robot Sockets", "Rocket - Robot Sockets" );
-	SDL_ShowCursor( SDL_DISABLE );
-
-	//Load ship image
-	SDL_Surface * tmp=IMG_Load(ship_gfx.c_str());
-	if(tmp==NULL) {
-		    printf("Error: Failed to load ship gfx (%s)\n", IMG_GetError());
-			 return 4;
-	}
-	ship=SDL_DisplayFormatAlpha(tmp);
-	SDL_FreeSurface(tmp);
-
-	//Load ship boost image
-	tmp=IMG_Load(ship_boost_gfx.c_str());
-	if(tmp==NULL) {
-		    printf("Error: Failed to load ship boost gfx (%s)\n", IMG_GetError());
-			 return 4;
-	}
-	ship_boost=SDL_DisplayFormatAlpha(tmp);
-	SDL_FreeSurface(tmp);
-	
-	active=true;
-
-	return 0;
+	glBindTexture(GL_TEXTURE_2D,0);
+	active = true;
+	//Set event handling in glut and start glut mainloop
+	glutKeyboardFunc(&hndl_event);
 }
 
-TTF_Font* loadfont(const char* file, int ptsize) {
-	  TTF_Font* tmpfont;
-	  tmpfont = TTF_OpenFont(file, ptsize);
-		if (tmpfont == NULL){
-		 printf("Unable to load font: %s %s \n", file, TTF_GetError());
-		}
-			  return tmpfont;
+void loop() {
+	gfx_clear();
+	draw_ship(s);
+	gfx_update();
 }
 
-/*
- * Returns 1 if the user wants to quit
- */
-int hndl_sdl_events() {
-    // Handle events (keyboard input, mainly)
-	while (SDL_PollEvent( &event )) {
-
-		if (event.type == SDL_QUIT ||
-				(event.type == SDL_KEYDOWN &&
-				 event.key.keysym.sym == SDLK_ESCAPE)) {
-			quit_sdl();
-			return 1;	
-		}
-		if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_h) {
-			toggle_highscore();	
-		}
-	} // while (handling events)
-	return 0;
+void start_event_loop() {
+	glutDisplayFunc(&loop);
+	glutMainLoop();
 }
 
-/**
- * Draws a ship at (x,y) directed at angle a (in degrees). 
- */
+
+/*int main() {
+	init_gfx(640,480);
+	s.x = 100;
+	s.y = 100;
+	s.a = 45;
+	glutDisplayFunc(loop);
+	glutMainLoop();
+}*/
+
 void draw_ship(const ship_t &s) {
 	if(!active) return;
 
-	Uint32 color = 0xFFFFFFFF;
-	Uint32 scan_color1 = 0xFFFFFFFF;
-	SDL_Surface * cur_ship=ship;
-	SDL_Rect text_rect,ship_pos;
+
+
+
+	glPushMatrix();
+	glTranslatef(s.x,s.y,0.0f);
+
+	//if(s.attr[GFX_ATTR_SHOOT])
+
+	//if(s.attr[GFX_ATTR_SCAN]) {
+
+	glMatrixMode(GL_MODELVIEW);
 	
-	slock();
+	glPushMatrix();
 
-	if(s.attr[GFX_ATTR_SHOOT])
-		aalineColor(screen,s._x,s._y,s._x+FIRE_LENGTH*cos(s.a),s._y-FIRE_LENGTH*sin(s.a),color);
-		
+	glRotatef(s.a, 0.0,0.0,1.0);
+	glTranslatef(-SHIP_SIZE/2.0f,-SHIP_SIZE/2.0f,0.0);
 
-	SDL_Surface *text_surface=TTF_RenderText_Blended(nick_font,s.nick,font_color);
-	text_rect.x=s._x-(2*strlen(s.nick)*NICK_FONT_SIZE)/7;
-	text_rect.y=s._y-HALF_SHIP_SIZE-NICK_FONT_SIZE;
-	SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
-	SDL_FreeSurface(text_surface);
-
-	if(s.attr[GFX_ATTR_SCAN]) {
-		circleColor(screen,s._x,s._y,GFX_SCAN_SIZE,scan_color1);
+	if(s.attr[GFX_ATTR_BOOST]) {
+		glBindTexture(GL_TEXTURE_2D,ship_boost);
+	} else {
+		glBindTexture(GL_TEXTURE_2D,ship);
 	}
 
-	if(s.attr[GFX_ATTR_BOOST])
-		cur_ship=ship_boost;
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f,0.0f); glVertex3f(0.0f,0.0f,0.0f);
+		glTexCoord2f(0.0f,1.0f); glVertex3f(0.0f,SHIP_SIZE,0.0f);
+		glTexCoord2f(1.0f,1.0f); glVertex3f(SHIP_SIZE, SHIP_SIZE,0.0f);
+		glTexCoord2f(1.0f,0.0f); glVertex3f(SHIP_SIZE,0.0f,0.0f);
+	glEnd();
 
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
 
-	SDL_Surface *rotated_ship=rotozoomSurface(cur_ship,radians_to_degrees(s.a),1.0,SMOOTH_ROTATION);
-	ship_pos.x=s._x-(rotated_ship->w/2);
-	ship_pos.y=s._y-(rotated_ship->h/2);
-	SDL_BlitSurface(rotated_ship,NULL,screen,&ship_pos);
-
-	SDL_FreeSurface(rotated_ship);
 	
 
-	sulock();
+	glPopMatrix();
+
+}
+
+void gfx_clear() {
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void gfx_update() {
+	glFlush();
 }
 
 void draw_highscore() {
-	if(show_highscore && highscore.size()>0) {
+	/*if(show_highscore && highscore.size()>0) {
 		SDL_Rect text_rect;
 		SDL_Surface *text_surface=0;
 
@@ -217,64 +171,20 @@ void draw_highscore() {
 			SDL_FreeSurface(text_surface);
 			text_rect.y+=HS_FONT_SIZE-4;
 		}
-	}
+	}*/
 }
 
-void gfx_update() {
-	if(!active) return;
-	SDL_UpdateRect(screen,0,0,screen_width,screen_height);
-}
-
-void gfx_clear() {
-	if(!active) return;
-	SDL_FillRect(screen,&screen_area,0x00);
-}
-
-void quit_sdl() {
+void stop_gfx() {
 	if(!active) return;
 	active=false;
-	SDL_Quit();
 }
 
-void toggle_highscore() {
-	if(active) {
-		if(!show_highscore) {
-			show_highscore=true;
-		} else {
-			show_highscore=false;
-		}
-	}
-}
+/** 
+ * Private functions
+ **/
 
-//internal functions
+void hndl_event(unsigned char key, int x, int y) {
 
-int radians_to_degrees(double rad) {
-	return (int) (rad * (180/PI));
-}
-
-double degrees_to_radians(int d) {
-	return d*(PI/180.0);
-}
-
-void slock()
-{
-	if(!active) return;
-	if ( SDL_MUSTLOCK(screen) )
-	{
-		if ( SDL_LockSurface(screen) < 0 )
-		{
-			return;
-		}
-	}
-}
-
-void sulock()
-{
-	if(!active) return;
-	if ( SDL_MUSTLOCK(screen) )
-	{
-		SDL_UnlockSurface(screen);
-	}
 }
 
 bool file_exists(const char * filename) {
@@ -284,3 +194,25 @@ bool file_exists(const char * filename) {
 	}
 	return false;
 }
+
+GLuint load_texture(const char* file) {
+	SDL_Surface* surface = IMG_Load(file);
+	GLuint texture;
+	glPixelStorei(GL_UNPACK_ALIGNMENT,4);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	SDL_PixelFormat *format = surface->format;
+	if (format->Amask)
+	{
+		gluBuild2DMipmaps(GL_TEXTURE_2D, 4,
+				surface->w, surface->h, GL_RGBA,GL_UNSIGNED_BYTE, surface->pixels);
+	}
+	else
+	{
+		gluBuild2DMipmaps(GL_TEXTURE_2D, 3,
+				surface->w, surface->h, GL_RGB, GL_UNSIGNED_BYTE, surface->pixels);
+	}
+	SDL_FreeSurface(surface);
+	return texture;
+}
+
