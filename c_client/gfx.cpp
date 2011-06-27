@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <GL/gl.h>
@@ -9,6 +8,7 @@
 #include <SDL/SDL_ttf.h>
 
 #include <string.h>
+#include <math.h>
 
 #define PI 3.14159265
 
@@ -41,6 +41,7 @@ void hndl_event(unsigned char key, int x, int y);
 
 TTF_Font* loadfont(const char* file, int ptsize);
 float radians_to_degrees(double rad);
+void glCircle3i(GLint x, GLint y, GLint radius);
 
 GLuint ship, ship_boost;
 TTF_Font * nick_font,*hs_font;
@@ -89,25 +90,32 @@ void init_gfx(int width, int height) {
 void draw_ship(const ship_t &s) {
 	if(!active) return;
 
+	glColor3f(1,1,1);
+
 	glPushMatrix();
 	glTranslatef(s.x,s.y,0.0f);
 
 
-	//if(s.attr[GFX_ATTR_SCAN]) {
 
 	glMatrixMode(GL_MODELVIEW);
 	
 	glPushMatrix();
 
+	if(s.attr[GFX_ATTR_SCAN]) {
+		glDisable(GL_TEXTURE_2D);
+		glCircle3i(0.0f,0.0f,GFX_SCAN_SIZE);
+		glEnable(GL_TEXTURE_2D);
+	}
+
 	glRotatef(radians_to_degrees(s.a)*-1.0f, 0.0,0.0,1.0);
 
 	if(s.attr[GFX_ATTR_SHOOT]) {
-		glColor3f(1,1,1);
-		glBindTexture(GL_TEXTURE_2D,0);
+		glDisable(GL_TEXTURE_2D);
 		glBegin(GL_LINES);
 			glVertex3f(0.0f,0.0f,0.0f);
 			glVertex3f(FIRE_LENGTH,1.0f,0.0f);
 		glEnd();
+		glEnable(GL_TEXTURE_2D);
 	}
 
 	glTranslatef(-SHIP_SIZE/2.0f,-SHIP_SIZE/2.0f,0.0);
@@ -247,3 +255,13 @@ TTF_Font* loadfont(const char* file, int ptsize) {
 float radians_to_degrees(double rad) {
 	return (float) (rad * (180/PI));
 }
+
+void glCircle3i(GLint x, GLint y, GLint radius) { 
+	float angle; 
+	glBegin(GL_LINE_LOOP); 
+		for(int i = 0; i < 100; i++) { 
+			angle = i*2*PI/100.0f; 
+			glVertex3f(x + (cos(angle) * radius), y + (sin(angle) * radius),0.0f); 
+		} 
+	glEnd(); 
+} 

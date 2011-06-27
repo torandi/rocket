@@ -8,7 +8,7 @@
 	#define GFX_ATTR_SCAN 2
 	#define NUM_GFX_ATTR 3
 
-	#define GFX_SCAN_SIZE 400
+	#define GFX_SCAN_SIZE 200
 
 	#define GFX_SERVER_FPS 20
 	#define GFX_TARGET_FPS 60.0f
