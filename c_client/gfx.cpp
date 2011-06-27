@@ -6,8 +6,11 @@
 #include <GL/glut.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
+#include <SDL/SDL_ttf.h>
 
 #include <string.h>
+
+#define PI 3.14159265
 
 #include "gfx.h"
 #include "client.h"
@@ -30,13 +33,17 @@ bool active=false;
 bool show_highscore=true;
 int screen_width, screen_height;
 
+SDL_Event    event;
 std::string ship_gfx, ship_boost_gfx, font_file;
 bool file_exists(const char * filename);
 GLuint load_texture(const char* file);
 void hndl_event(unsigned char key, int x, int y);
 
-ship_t s;
+TTF_Font* loadfont(const char* file, int ptsize);
+float radians_to_degrees(double rad);
+
 GLuint ship, ship_boost;
+TTF_Font * nick_font,*hs_font;
 
 void init(int w, int h) {
 	glClearColor(0,0,0,0);
@@ -51,12 +58,9 @@ void init(int w, int h) {
 }
 
 void init_gfx(int width, int height) {
-	int zero = 0;
-	glutInit(&zero,NULL);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-	glutInitWindowSize(width, height);
-	glutInitWindowPosition(100, 100);
-	glutCreateWindow( "Rocket - Robot Sockets");
+	SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_SetVideoMode(width,height, 24, SDL_OPENGL | SDL_GL_DOUBLEBUFFER );
+	SDL_WM_SetCaption("Rocket - Robot Sockets","Rocket - Robot Sockets");
 
 	screen_width = width;
 	screen_height = height;
@@ -72,47 +76,22 @@ void init_gfx(int width, int height) {
 		ship_gfx = SHIP_GFX_SHARE;
 		ship_boost_gfx = SHIP_BOOST_GFX_SHARE;
 	}
+	nick_font=loadfont(font_file.c_str(),NICK_FONT_SIZE);
+	hs_font=loadfont(font_file.c_str(),HS_FONT_SIZE);
 
 	ship=load_texture(ship_gfx.c_str());
 	ship_boost=load_texture(ship_boost_gfx.c_str());
 
 	glBindTexture(GL_TEXTURE_2D,0);
 	active = true;
-	//Set event handling in glut and start glut mainloop
-	glutKeyboardFunc(&hndl_event);
 }
-
-void loop() {
-	gfx_clear();
-	draw_ship(s);
-	gfx_update();
-}
-
-void start_event_loop() {
-	glutDisplayFunc(&loop);
-	glutMainLoop();
-}
-
-
-/*int main() {
-	init_gfx(640,480);
-	s.x = 100;
-	s.y = 100;
-	s.a = 45;
-	glutDisplayFunc(loop);
-	glutMainLoop();
-}*/
 
 void draw_ship(const ship_t &s) {
 	if(!active) return;
 
-
-
-
 	glPushMatrix();
 	glTranslatef(s.x,s.y,0.0f);
 
-	//if(s.attr[GFX_ATTR_SHOOT])
 
 	//if(s.attr[GFX_ATTR_SCAN]) {
 
@@ -120,7 +99,17 @@ void draw_ship(const ship_t &s) {
 	
 	glPushMatrix();
 
-	glRotatef(s.a, 0.0,0.0,1.0);
+	glRotatef(radians_to_degrees(s.a)*-1.0f, 0.0,0.0,1.0);
+
+	if(s.attr[GFX_ATTR_SHOOT]) {
+		glColor3f(1,1,1);
+		glBindTexture(GL_TEXTURE_2D,0);
+		glBegin(GL_LINES);
+			glVertex3f(0.0f,0.0f,0.0f);
+			glVertex3f(FIRE_LENGTH,1.0f,0.0f);
+		glEnd();
+	}
+
 	glTranslatef(-SHIP_SIZE/2.0f,-SHIP_SIZE/2.0f,0.0);
 
 	if(s.attr[GFX_ATTR_BOOST]) {
@@ -135,6 +124,7 @@ void draw_ship(const ship_t &s) {
 		glTexCoord2f(1.0f,1.0f); glVertex3f(SHIP_SIZE, SHIP_SIZE,0.0f);
 		glTexCoord2f(1.0f,0.0f); glVertex3f(SHIP_SIZE,0.0f,0.0f);
 	glEnd();
+
 
 	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
@@ -151,11 +141,12 @@ void gfx_clear() {
 
 void gfx_update() {
 	glFlush();
+	SDL_GL_SwapBuffers();
 }
 
 void draw_highscore() {
-	/*if(show_highscore && highscore.size()>0) {
-		SDL_Rect text_rect;
+	if(show_highscore && highscore.size()>0) {
+	/*	SDL_Rect text_rect;
 		SDL_Surface *text_surface=0;
 
 		text_rect.x=5;
@@ -170,22 +161,50 @@ void draw_highscore() {
 			SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
 			SDL_FreeSurface(text_surface);
 			text_rect.y+=HS_FONT_SIZE-4;
-		}
-	}*/
+		}*/
+	}
 }
 
-void stop_gfx() {
+/*
+ * Returns 1 if the user wants to quit
+ */
+int hndl_sdl_events() {
+    // Handle events (keyboard input, mainly)
+	while (SDL_PollEvent( &event )) {
+
+		if (event.type == SDL_QUIT ||
+				(event.type == SDL_KEYDOWN &&
+				 event.key.keysym.sym == SDLK_ESCAPE)) {
+			quit_sdl();
+			return 1;	
+		}
+		if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_h) {
+			toggle_highscore();	
+		}
+	} // while (handling events)
+	return 0;
+}
+
+void quit_sdl() {
 	if(!active) return;
 	active=false;
+	SDL_Quit();
+}
+
+void toggle_highscore() {
+	if(active) {
+		if(!show_highscore) {
+			show_highscore=true;
+		} else {
+			show_highscore=false;
+		}
+	}
 }
 
 /** 
  * Private functions
  **/
 
-void hndl_event(unsigned char key, int x, int y) {
-
-}
 
 bool file_exists(const char * filename) {
 	if (FILE * file = fopen(filename, "r")) {
@@ -216,3 +235,15 @@ GLuint load_texture(const char* file) {
 	return texture;
 }
 
+TTF_Font* loadfont(const char* file, int ptsize) {
+	  TTF_Font* tmpfont;
+	  tmpfont = TTF_OpenFont(file, ptsize);
+		if (tmpfont == NULL){
+		 printf("Unable to load font: %s %s \n", file, TTF_GetError());
+		}
+			  return tmpfont;
+}
+
+float radians_to_degrees(double rad) {
+	return (float) (rad * (180/PI));
+}

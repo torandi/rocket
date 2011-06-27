@@ -11,14 +11,14 @@
 	#define GFX_SCAN_SIZE 400
 
 	#define GFX_SERVER_FPS 20
-	#define GFX_TARGET_FPS 100
+	#define GFX_TARGET_FPS 60.0f
 	#define GFX_FACTOR GFX_TARGET_FPS/GFX_SERVER_FPS
 
 	#define GFX_NUM_HIGHSCORE_ENTRIES 5
 
 	void init_gfx(int width,int height); 
-	void start_event_loop();
-	void stop_gfx();
+	int hndl_sdl_events();
+	void quit_sdl();
 	void draw_ship(const ship_t &ship);
 	void draw_highscore();
 	void gfx_update();
