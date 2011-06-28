@@ -1,5 +1,5 @@
-LDFLAGS=-pthread -lSDL -lSDL_ttf -lSDL_image -lGL -lglut
-CFLAGS = -g -Wall
+LDFLAGS=-pthread -lSDL -lSDL_ttf -lSDL_image -lGL -lglut `pkg-config --libs ftgl`
+CFLAGS = -g -Wall `pkg-config --cflags ftgl`
 
 all: rocket
 rocket: protocol.o client.o gfx.o connection.o config.o sha1.o

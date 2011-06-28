@@ -2,10 +2,9 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
+#include <FTGL/ftgl.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
-#include <SDL/SDL_ttf.h>
 
 #include <string.h>
 #include <math.h>
@@ -39,12 +38,11 @@ bool file_exists(const char * filename);
 GLuint load_texture(const char* file);
 void hndl_event(unsigned char key, int x, int y);
 
-TTF_Font* loadfont(const char* file, int ptsize);
 float radians_to_degrees(double rad);
 void glCircle3i(GLint x, GLint y, GLint radius);
 
 GLuint ship, ship_boost;
-TTF_Font * nick_font,*hs_font;
+FTGLTextureFont * nick_font,*hs_font;
 
 void init(int w, int h) {
 	glClearColor(0,0,0,0);
@@ -77,8 +75,11 @@ void init_gfx(int width, int height) {
 		ship_gfx = SHIP_GFX_SHARE;
 		ship_boost_gfx = SHIP_BOOST_GFX_SHARE;
 	}
-	nick_font=loadfont(font_file.c_str(),NICK_FONT_SIZE);
-	hs_font=loadfont(font_file.c_str(),HS_FONT_SIZE);
+	nick_font = new FTTextureFont(font_file.c_str());
+	hs_font = new FTTextureFont(font_file.c_str());
+
+	nick_font->FaceSize(NICK_FONT_SIZE);
+	hs_font->FaceSize(HS_FONT_SIZE);
 
 	ship=load_texture(ship_gfx.c_str());
 	ship_boost=load_texture(ship_boost_gfx.c_str());
@@ -95,7 +96,11 @@ void draw_ship(const ship_t &s) {
 	glPushMatrix();
 	glTranslatef(s.x,s.y,0.0f);
 
-
+	glPushMatrix();
+	glTranslatef(-(2*strlen(s.nick)*NICK_FONT_SIZE)/7,SHIP_SIZE/2.0f-NICK_FONT_SIZE,0.0f);
+	glRotatef(180,0,0,1.0);
+	nick_font->Render(s.nick);
+	glPopMatrix();
 
 	glMatrixMode(GL_MODELVIEW);
 	
@@ -241,15 +246,6 @@ GLuint load_texture(const char* file) {
 	}
 	SDL_FreeSurface(surface);
 	return texture;
-}
-
-TTF_Font* loadfont(const char* file, int ptsize) {
-	  TTF_Font* tmpfont;
-	  tmpfont = TTF_OpenFont(file, ptsize);
-		if (tmpfont == NULL){
-		 printf("Unable to load font: %s %s \n", file, TTF_GetError());
-		}
-			  return tmpfont;
 }
 
 float radians_to_degrees(double rad) {
