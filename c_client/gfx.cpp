@@ -43,6 +43,10 @@ void glCircle3i(GLint x, GLint y, GLint radius);
 
 GLuint ship, ship_boost;
 FTGLTextureFont * nick_font,*hs_font;
+const float text_matrix[] = 	{ 1.0f,  0.0f, 0.0f, 0.0f,
+										0.0f, -1.0f, 0.0f, 0.0f,
+										0.0f,  0.0f, 1.0f, 0.0f,
+										0.0f,  0.0f, 0.0f, 1.0f };
 
 void init(int w, int h) {
 	glClearColor(0,0,0,0);
@@ -97,8 +101,8 @@ void draw_ship(const ship_t &s) {
 	glTranslatef(s.x,s.y,0.0f);
 
 	glPushMatrix();
-	glTranslatef(-(2*strlen(s.nick)*NICK_FONT_SIZE)/7,SHIP_SIZE/2.0f-NICK_FONT_SIZE,0.0f);
-	glRotatef(180,0,0,1.0);
+	glMultMatrixf(text_matrix);
+	glTranslatef(-(2*strlen(s.nick)*NICK_FONT_SIZE)/7,SHIP_SIZE/2.0f,0.0f);
 	nick_font->Render(s.nick);
 	glPopMatrix();
 
