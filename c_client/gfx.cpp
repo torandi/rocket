@@ -163,22 +163,33 @@ void gfx_update() {
 
 void draw_highscore() {
 	if(show_highscore && highscore.size()>0) {
-	/*	SDL_Rect text_rect;
-		SDL_Surface *text_surface=0;
+		glPushMatrix();
 
-		text_rect.x=5;
-		text_rect.y=2;
+		glTranslatef(5.0f, 2.0f+HS_FONT_SIZE-4, 0.0f);
+
+		glMatrixMode(GL_MODELVIEW);
+
+		glPushMatrix();
+
+		glMultMatrixf(text_matrix);
+
+		glMatrixMode(GL_PROJECTION);
 
 		char buffer[64];
 
 		for(int i=0;i<std::min((int)highscore.size(),GFX_NUM_HIGHSCORE_ENTRIES);++i) {
 			score_t s=highscore[i];
 			sprintf(buffer,"%i. %s: %.2f",i+1,s.nick,s.score);
-			text_surface=TTF_RenderText_Blended(hs_font,buffer,font_color);
-			SDL_BlitSurface(text_surface,NULL,screen,&text_rect);
-			SDL_FreeSurface(text_surface);
-			text_rect.y+=HS_FONT_SIZE-4;
-		}*/
+			hs_font->Render(buffer);
+			glTranslatef(0.0f,HS_FONT_SIZE-4,0.0f);
+		}
+		glMatrixMode(GL_MODELVIEW);
+
+		glPopMatrix();
+
+		glMatrixMode(GL_PROJECTION);
+
+		glPopMatrix();
 	}
 }
 
