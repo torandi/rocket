@@ -1,0 +1,26 @@
+This is the client that is run to show the display and forward data to the server
+
+=== INSTALLATION === 
+Install the required dependencies:
+libsdl-dev libsdl-image1.2-dev libftgl-dev
+
+then run
+make
+
+=== USAGE ===
+Run with
+./rocket
+
+Help with 
+./rocket -h
+
+rocket.conf is configuration file
+
+Help:
+RoBot Sockets v. 0.1 BETA
+Arguments:
+	-nox: Turn off graphics
+	 -s, --server <server>  : Set server
+	-sp,--server-port <port> : Set server port
+	-lp,--local-port : Set which port to listen to
+
