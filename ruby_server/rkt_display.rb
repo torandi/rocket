@@ -35,27 +35,25 @@ class RktDisplay
 	# Send data to client
 	def run
 	  stop = false
-	  last_time = 0
 	
-		while not stop do
-			frame_time = "%10.6f" % ((Time.now).to_f + @send_buffer_delay.to_f)
-			stop = send "frame start #{frame_time}"
+	  while not stop do
+	    frame_time = "%10.6f" % ((Time.now).to_f + @send_buffer_delay.to_f)
+		stop = send "frame start #{frame_time}"
 
-      $items.each do |obj|
-        next if obj.ship.dead?
-        stop = send obj.output
-      end
+        $items.each do |obj|
+          next if obj.ship.dead?
+          stop = send obj.output
+        end
 
 	    $score.each do |s|
-	      if last_time < (Time.now).to_i - 5
+	      if rand(100) < 1
 	        stop = send s[1].send_score(s[0], s[2], s[3])
-	        last_time = (Time.now).to_i
 	      end
 	    end
 
-			stop = send "frame stop"
-			sleep 0.05
-		end
+		stop = send "frame stop"
+		sleep 0.05
+	  end
 	end
 
 end

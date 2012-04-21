@@ -15,7 +15,12 @@ class Protocol
         frame = package.bytes.map{ |a| (a^"5"[0]).chr }.to_s
         len = frame[0] # note, vid ruby 1.9 lägg på .ord
         hash = frame[1..4]
-        payload = payload + frame[(32-(len == 0 ? 27 : len))..-1]
+        buffer = frame[(32-(len == 0 ? 27 : len))..-1]
+        if buffer.nil?
+          puts "error: nil payload"
+          return nil
+        end
+        payload = payload + buffer
         #puts "read: #{package} -> [#{frame}] '#{payload}'"
         if payload.nil?
           puts "error: nil payload"
