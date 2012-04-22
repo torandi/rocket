@@ -3,7 +3,7 @@ CFLAGS = -g -Wall `pkg-config --cflags ftgl`
 
 all: rocket
 rocket: protocol.o client.o gfx.o connection.o config.o sha1.o
-	g++ ${LDFLAGS} ${CFLAGS}  -o rocket protocol.o client.o gfx.o connection.o config.o sha1.o
+	g++ -o rocket protocol.o client.o gfx.o connection.o config.o sha1.o ${LDFLAGS} ${CFLAGS}
 
 client.o: client.cpp connection.h gfx.h score.h
 	g++ ${LDFLAGS} ${CFLAGS} -c -o client.o client.cpp

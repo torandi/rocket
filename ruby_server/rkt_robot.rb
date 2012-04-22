@@ -2,12 +2,13 @@ class RktRobot
 
 	def initialize client
 	  @ship = RocketShip.new client
-	  puts "new rocketship"
 	  @c = client
 	  @pulse = Time.now.to_i
 	  
 	  uid = Time.now.to_i.to_s[5..9] # placeholder uid
 	  $score.push [uid, @ship, 0.0, 0.0]
+
+	  puts "new rocketship uid:#{uid}"
 	end
 	
 	def client
@@ -24,7 +25,7 @@ class RktRobot
 	# Got data from client
 	def input line
 	
-    return if @ship.dead?
+      return if @ship.dead?
 	
 	  @pulse = Time.now.to_i
 	
@@ -46,7 +47,7 @@ class RktRobot
 	  else
 	    pulse_str = ""
 	  end
-	  return "#{@ship.item} #{@ship.name}#{pulse_str} #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.speed} #{@ship.action}"
+	  return "#{@ship.item} #{@ship.name}#{pulse_str}[#{@ship.energy}] #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.speed} #{@ship.action}"
 	end
 	
 	def ship
@@ -81,10 +82,15 @@ class RktRobot
 	
 	def cmd_angle v
 	  # Convert to radians
+      return if not @ship.energy? 5
+      @ship.consume 5
 	  @ship.angle = v.to_i * Math::PI/180
 	end
 
   def cmd_shoot
+    
+    return if not @ship.energy? 20
+    @ship.consume 20
   
     # Ship target radius
     target_radius = 15
@@ -126,21 +132,32 @@ class RktRobot
       puts "#{enemy_rad} #{@ship.angle}" if $verbose > 2
 
       if v1_rad > @ship.angle and @ship.angle > v2_rad
-        puts "ship #{i.ship.name} is dead"
-        i.ship.dead = true
-        record_kill @ship
-        record_death i.ship
-        begin
-          Protocol.write i.client, "dead"
-        rescue Errno::EPIPE
-          # Connection is dead, remove robot
-          $items.delete i  
+        # This is a hit
+
+        # Have the ship the shield enabled?
+        if @ship.shield and @ship.energy? 25
+          @ship.consume 25
+          cmd_energy
+        else
+          puts "ship #{i.ship.name} is dead"
+          i.ship.dead = true
+          record_kill @ship
+          record_death i.ship
+
+          begin
+            Protocol.write i.client, "dead"
+          rescue Errno::EPIPE
+            # Connection is dead, remove robot
+            $items.delete i
+          end
         end
       end
     end
   end
   
   def cmd_boost
+    return if not @ship.energy? 50
+    @ship.consume 50
     @ship.boost true
   end
   
@@ -158,6 +175,10 @@ class RktRobot
   end
 
   def cmd_scan
+
+    return if not @ship.energy? 10
+    @ship.consume 10
+
     @ship.scan = true
 
     puts "My angle is #{@ship.angle}" if $verbose > 2
@@ -213,6 +234,14 @@ class RktRobot
     $verbose = level.to_i
   end
 	
-	alias :cmd_fire :cmd_shoot
+  def cmd_energy
+    Protocol.write @c, "energy #{@ship.energy}"
+  end
+
+  def cmd_shield
+    @ship.shield = ! @ship.shield
+  end
+
+  alias :cmd_fire :cmd_shoot
 	
 end
