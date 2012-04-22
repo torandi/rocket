@@ -169,30 +169,33 @@ void draw_ship(const ship_t &s) {
 	nick_font->Render(s.nick);
 	glPopMatrix();
 
-	//Draw power bar:
-	glPushMatrix();
-	glTranslatef(-POWERBAR_SIZE/2.f, SHIP_SIZE/2.f+POWERBAR_WIDTH*1.5f, 0.f);
-	glLineWidth(POWERBAR_WIDTH);
+	if(!s.attr[GFX_ATTR_EXPLOSION]) {
+		//Draw power bar:
+		glPushMatrix();
+		glTranslatef(-POWERBAR_SIZE/2.f, SHIP_SIZE/2.f+POWERBAR_WIDTH*1.5f, 0.f);
+		glLineWidth(POWERBAR_WIDTH);
 
-	glDisable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_2D);
 
-	glBegin(GL_LINES);
-		glColor3f(0.1, 0.1, 0.1);
-		glVertex3f(0.0f,0.0f,0.0f);
-		glVertex3f(POWERBAR_SIZE,0.0f,0.0f);
+		glBegin(GL_LINES);
+			glColor3f(0.1, 0.1, 0.1);
+			glVertex3f(0.0f,0.0f,0.0f);
+			glVertex3f(POWERBAR_SIZE,0.0f,0.0f);
 
-		glColor3f(0.f, 1.f, 0.f);
-		glVertex3f(0.0f,0.0f,0.0f);
-		glVertex3f(POWERBAR_SIZE*s.power,0.0f,0.0f);
-	glEnd();
+			glColor3f(0.f, 1.f, 0.f);
+			glVertex3f(0.0f,0.0f,0.0f);
+			glVertex3f(POWERBAR_SIZE*s.power,0.0f,0.0f);
+		glEnd();
 
-	glColor3f(s.r, s.g, s.b);
+		glColor3f(s.r, s.g, s.b);
 
-	glEnable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_2D);
 
-	glLineWidth(1.f);
+		glLineWidth(1.f);
 
-	glPopMatrix();
+		glPopMatrix();
+
+	}
 
 	glPushMatrix();
 
@@ -215,9 +218,9 @@ void draw_ship(const ship_t &s) {
 
 	glTranslatef(-SHIP_SIZE/2.0f,-SHIP_SIZE/2.0f,0.0);
 
-	if(s.attr[GFX_ATTR_BOOST]) {
+	if(s.attr[GFX_ATTR_EXPLOSION]) {
 		glColor3f(1.f, 1.f, 1.f);
-		glBindTexture(GL_TEXTURE_2D,ship_boost);
+		glBindTexture(GL_TEXTURE_2D,ship_explode);
 		glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,0.0f); glVertex3f(0.0f,0.0f,0.0f);
 			glTexCoord2f(0.0f,1.0f); glVertex3f(0.0f,SHIP_SIZE,0.0f);
@@ -225,18 +228,29 @@ void draw_ship(const ship_t &s) {
 			glTexCoord2f(1.0f,0.0f); glVertex3f(SHIP_SIZE,0.0f,0.0f);
 		glEnd();
 		glColor3f(s.r, s.g, s.b);
+	} else {
+		if(s.attr[GFX_ATTR_BOOST]) {
+			glColor3f(1.f, 1.f, 1.f);
+			glBindTexture(GL_TEXTURE_2D,ship_boost);
+			glBegin(GL_QUADS);
+				glTexCoord2f(0.0f,0.0f); glVertex3f(0.0f,0.0f,0.0f);
+				glTexCoord2f(0.0f,1.0f); glVertex3f(0.0f,SHIP_SIZE,0.0f);
+				glTexCoord2f(1.0f,1.0f); glVertex3f(SHIP_SIZE, SHIP_SIZE,0.0f);
+				glTexCoord2f(1.0f,0.0f); glVertex3f(SHIP_SIZE,0.0f,0.0f);
+			glEnd();
+			glColor3f(s.r, s.g, s.b);
+		}
+
+
+		glBindTexture(GL_TEXTURE_2D,ship);
+		glBegin(GL_QUADS);
+			glTexCoord2f(0.0f,0.0f); glVertex3f(0.0f,0.0f,0.0f);
+			glTexCoord2f(0.0f,1.0f); glVertex3f(0.0f,SHIP_SIZE,0.0f);
+			glTexCoord2f(1.0f,1.0f); glVertex3f(SHIP_SIZE, SHIP_SIZE,0.0f);
+			glTexCoord2f(1.0f,0.0f); glVertex3f(SHIP_SIZE,0.0f,0.0f);
+		glEnd();
+
 	}
-
-
-	glBindTexture(GL_TEXTURE_2D,ship);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0.0f,0.0f); glVertex3f(0.0f,0.0f,0.0f);
-		glTexCoord2f(0.0f,1.0f); glVertex3f(0.0f,SHIP_SIZE,0.0f);
-		glTexCoord2f(1.0f,1.0f); glVertex3f(SHIP_SIZE, SHIP_SIZE,0.0f);
-		glTexCoord2f(1.0f,0.0f); glVertex3f(SHIP_SIZE,0.0f,0.0f);
-	glEnd();
-
-
 
 	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
