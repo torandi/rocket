@@ -12,6 +12,8 @@ struct ship_t {
 	float s; //speed
 	float power; 
 	bool attr[NUM_GFX_ATTR];
+
+	float r, g, b;
 	
 	int _x;
 	int _y;

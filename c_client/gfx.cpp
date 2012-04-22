@@ -20,6 +20,8 @@
 #define FONT_FILE_SHARE "/usr/share/rocket/data/Acknowledge_TT_BRK.ttf"
 #define SHIP_GFX "data/ship.png"
 #define SHIP_GFX_SHARE "/usr/share/rocket/data/ship.png"
+#define SHIP_EXPLODE_GFX "data/ship_explode.png"
+#define SHIP_EXPLODE_GFX_SHARE "/usr/share/rocket/data/ship_explode.png"
 #define SHIELD_GFX "data/shield.png"
 #define SHIELD_GFX_SHARE "/usr/share/rocket/data/shield.png"
 #define SHIP_BOOST_GFX "data/ship_boost.png"
@@ -44,7 +46,7 @@ float nick_font_size, nick_font_scale;
 float hs_font_size, hs_font_scale;
 
 SDL_Event    event;
-std::string ship_gfx, ship_boost_gfx, shield_gfx, font_file;
+std::string ship_gfx, ship_boost_gfx, ship_explode_gfx, shield_gfx, font_file;
 bool file_exists(const char * filename);
 GLuint load_texture(const char* file);
 void hndl_event(unsigned char key, int x, int y);
@@ -53,7 +55,7 @@ void resize(int w,int h);
 float radians_to_degrees(double rad);
 void glCircle3i(GLint x, GLint y, GLint radius);
 
-GLuint ship, ship_boost, shield;
+GLuint ship, ship_boost, ship_explode, shield;
 FTGLTextureFont * nick_font,*hs_font;
 const float text_matrix[] = 	{ 1.0f,  0.0f, 0.0f, 0.0f,
 										0.0f, -1.0f, 0.0f, 0.0f,
@@ -104,11 +106,13 @@ void init_gfx(int width, int height, float nick_scale, float hs_scale) {
 		ship_gfx = SHIP_GFX;
 		shield_gfx = SHIELD_GFX;
 		ship_boost_gfx = SHIP_BOOST_GFX;
+		ship_explode_gfx = SHIP_EXPLODE_GFX;
 	} else {
 		font_file=FONT_FILE_SHARE;
 		ship_gfx = SHIP_GFX_SHARE;
 		shield_gfx = SHIELD_GFX_SHARE;
 		ship_boost_gfx = SHIP_BOOST_GFX_SHARE;
+		ship_explode_gfx = SHIP_EXPLODE_GFX_SHARE;
 	}
 	nick_font = new FTTextureFont(font_file.c_str());
 	hs_font = new FTTextureFont(font_file.c_str());
@@ -124,6 +128,7 @@ void init_gfx(int width, int height, float nick_scale, float hs_scale) {
 
 	ship=load_texture(ship_gfx.c_str());
 	ship_boost=load_texture(ship_boost_gfx.c_str());
+	ship_explode=load_texture(ship_explode_gfx.c_str());
 	shield=load_texture(shield_gfx.c_str());
 
 	glBindTexture(GL_TEXTURE_2D,0);
@@ -138,9 +143,11 @@ void draw_ship(const ship_t &s) {
 	glPushMatrix();
 	glTranslatef(s.x,s.y,0.0f);
 
+	float rot = radians_to_degrees(s.a)*-1.0f;
 
 	if(s.attr[GFX_ATTR_SHIELD]) {
 		glPushMatrix();
+		glRotatef(rot, 0.0,0.0,1.0);
 
 		glTranslatef(-SHIELD_SIZE/2.0f, -SHIELD_SIZE/2.f, 0.f);
 
@@ -179,7 +186,7 @@ void draw_ship(const ship_t &s) {
 		glVertex3f(POWERBAR_SIZE*s.power,0.0f,0.0f);
 	glEnd();
 
-	glColor3f(1.f, 1.f, 1.f);
+	glColor3f(s.r, s.g, s.b);
 
 	glEnable(GL_TEXTURE_2D);
 
@@ -195,7 +202,7 @@ void draw_ship(const ship_t &s) {
 		glEnable(GL_TEXTURE_2D);
 	}
 
-	glRotatef(radians_to_degrees(s.a)*-1.0f, 0.0,0.0,1.0);
+	glRotatef(rot, 0.0,0.0,1.0);
 
 	if(s.attr[GFX_ATTR_SHOOT]) {
 		glDisable(GL_TEXTURE_2D);
