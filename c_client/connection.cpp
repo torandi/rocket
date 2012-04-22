@@ -41,7 +41,7 @@ socket_data * init_socket(int sock,bool secure) {
 
 /* Sends data through socket */
 void write_data(const socket_data * sock,const void * data,int len) {
-	int n = send(sock->socket,data,len,MSG_DONTROUTE);
+	int n = send(sock->socket,data,len,0);
 		
 	if(n<0) {
 		fprintf(stderr,"Failed to write to socket %i (%s).\n",sock->socket,(char*)data);
