@@ -28,6 +28,7 @@
 #define PROT_GFX_ATTR_SHOOT "shoot"
 #define PROT_GFX_ATTR_BOOST "boost"
 #define PROT_GFX_ATTR_SCAN "scan"
+#define PROT_GFX_ATTR_SHIELD "shield"
 
 #define PROT_SEND_MODE_DISPLAY "mode display\n"
 #define PROT_SEND_MODE_BOT "mode bot\n"

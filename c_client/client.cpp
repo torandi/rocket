@@ -449,6 +449,8 @@ void read_server(struct thread_data *td) {
 									ship.attr[GFX_ATTR_BOOST]=true;
 								} else if(strcmp(cur_attr,PROT_GFX_ATTR_SCAN)==0) {
 									ship.attr[GFX_ATTR_SCAN]=true;
+								} else if(strcmp(cur_attr,PROT_GFX_ATTR_SHIELD)==0) {
+									ship.attr[GFX_ATTR_SHIELD]=true;
 								} else {
 #if VERBOSE >= 3
 									fprintf(stderr,"Got unknown attribute %s\n",cur_attr);

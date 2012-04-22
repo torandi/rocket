@@ -6,7 +6,8 @@
 	#define GFX_ATTR_SHOOT 0
 	#define GFX_ATTR_BOOST 1
 	#define GFX_ATTR_SCAN 2
-	#define NUM_GFX_ATTR 3
+	#define GFX_ATTR_SHIELD 3
+	#define NUM_GFX_ATTR 4
 
 	#define GFX_SCAN_SIZE 200
 
