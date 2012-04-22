@@ -28,6 +28,8 @@
 #define SHIP_SIZE 32.0f
 #define SHIELD_SIZE 64.0f
 #define FIRE_LENGTH 128.0f
+#define POWERBAR_SIZE 64.f
+#define POWERBAR_WIDTH 4.f
 
 #define NICK_FONT_SIZE 22.0f
 #define HS_FONT_SIZE 16.0f
@@ -160,8 +162,31 @@ void draw_ship(const ship_t &s) {
 	nick_font->Render(s.nick);
 	glPopMatrix();
 
-	glMatrixMode(GL_MODELVIEW);
-	
+	//Draw power bar:
+	glPushMatrix();
+	glTranslatef(-POWERBAR_SIZE/2.f, SHIP_SIZE/2.f+POWERBAR_WIDTH*1.5f, 0.f);
+	glLineWidth(POWERBAR_WIDTH);
+
+	glDisable(GL_TEXTURE_2D);
+
+	glBegin(GL_LINES);
+		glColor3f(0.1, 0.1, 0.1);
+		glVertex3f(0.0f,0.0f,0.0f);
+		glVertex3f(POWERBAR_SIZE,0.0f,0.0f);
+
+		glColor3f(0.f, 1.f, 0.f);
+		glVertex3f(0.0f,0.0f,0.0f);
+		glVertex3f(POWERBAR_SIZE*s.power,0.0f,0.0f);
+	glEnd();
+
+	glColor3f(1.f, 1.f, 1.f);
+
+	glEnable(GL_TEXTURE_2D);
+
+	glLineWidth(1.f);
+
+	glPopMatrix();
+
 	glPushMatrix();
 
 	if(s.attr[GFX_ATTR_SCAN]) {

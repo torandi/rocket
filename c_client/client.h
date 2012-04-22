@@ -21,7 +21,7 @@
 	#define VERBOSE 2
 
 
-	#define CLIENT_VERSION "0.1 BETA"
+	#define CLIENT_VERSION "0.2 BETA"
 
 	typedef enum {
 		INIT=0,

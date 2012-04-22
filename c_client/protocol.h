@@ -4,7 +4,7 @@
 
 /** protcol contains all the server-client protocol */
 
-#define VERSION "0.1"
+#define VERSION "0.2"
 
 #define PROT_AUTH "auth"
 #define PROT_AUTH_OK "auth ok"
@@ -17,9 +17,9 @@
 #define PROT_GFX_FRAME_START_TIME "frame start %lf"
 #define PROT_GFX_FRAME_STOP "frame stop"
 #define PROT_GFX_SHIP "ship"
-#define PROT_GFX_SHIP_DATA "ship %s %i %i %lf %f %s"
-#define PROT_GFX_SHIP_DATA_MIN_ARGS 5
-#define PROT_GFX_SHIP_DATA_ATTR_ARGS 6
+#define PROT_GFX_SHIP_DATA "ship %s %i %i %lf %f %i %s"
+#define PROT_GFX_SHIP_DATA_MIN_ARGS 6
+#define PROT_GFX_SHIP_DATA_ATTR_ARGS 7
 
 #define PROT_SCORE "score"
 #define PROT_SCORE_DATA "score %i %s %f"

@@ -423,8 +423,11 @@ void read_server(struct thread_data *td) {
 					char * attr_str=(char*)malloc(128);
 					attr_org=attr_str; //save a pointer to orginal allocated memory
 					bzero(ship.attr,NUM_GFX_ATTR); //Make sure attr only contains false (0)
-					
-					int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,attr_str);
+				
+					int power = 0;
+					int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,&power, attr_str);
+					ship.power = power/100.f;
+						 
 					if(n>=PROT_GFX_SHIP_DATA_MIN_ARGS) {
 						if(n==PROT_GFX_SHIP_DATA_ATTR_ARGS) {
 	#if VERBOSE >= 5
