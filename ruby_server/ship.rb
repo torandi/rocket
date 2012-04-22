@@ -16,8 +16,10 @@ class RocketShip < RocketItem
     @dead_ticker = 0
     @scan = false
     @scan_ticker = 0
-    @energy = 100;
-    @shield = false;
+    @energy = 100
+    @shield = false
+    @color = "ffffff"
+    @explosion = 0
   end
 
   def action
@@ -26,6 +28,7 @@ class RocketShip < RocketItem
     r.push "shoot" if @shoot
     r.push "scan" if @scan
     r.push "shield" if @shield
+    r.push "explosion" if @explosion > 0
     r.join ","
   end
   
@@ -54,6 +57,7 @@ class RocketShip < RocketItem
 
     @energy = @energy + 1 if @energy < 100
     @energy = @energy - 1 if @shield
+    @explosion = @explosion - 1 if @explosion > 0
 
     if @shoot_ticker > 5
       @shoot = false
@@ -121,5 +125,12 @@ class RocketShip < RocketItem
     false
   end
 
-  attr_accessor :item, :x, :y, :name, :shoot, :angle, :dead, :scan, :speed_mod, :energy, :shield
+  def color= str
+    @color = str.downcase
+  end
+
+  attr_accessor :item, :x, :y, :name, :shoot, :angle, :dead, :scan, :speed_mod, :energy, :shield,
+    :explosion
+  attr_reader :color
+
 end

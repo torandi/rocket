@@ -30,7 +30,7 @@ class RktRobot
 	  @pulse = Time.now.to_i
 	
 	  begin
-	    if line =~ /^([a-z]+) ([a-z0-9]+)/
+	    if line =~ /^([a-z]+) ([a-z0-9a-z]+)/i
 	      self.send("cmd_#{$1}", $2) if respond_to? "cmd_#{$1}".to_sym
 	    elsif line =~ /^([a-z]+)$/
 	      self.send("cmd_#{$1}") if respond_to? "cmd_#{$1}".to_sym
@@ -47,7 +47,7 @@ class RktRobot
 	  else
 	    pulse_str = ""
 	  end
-	  return "#{@ship.item} #{@ship.name}#{pulse_str}[#{@ship.energy}] #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.speed} #{@ship.action}"
+	  return "#{@ship.item} #{@ship.name}#{pulse_str} #{@ship.x} #{@ship.y} #{@ship.angle} #{@ship.speed} #{@ship.energy} #{@ship.color} #{@ship.action}"
 	end
 	
 	def ship
@@ -141,6 +141,7 @@ class RktRobot
         else
           puts "ship #{i.ship.name} is dead"
           i.ship.dead = true
+          i.ship.explosion = 5
           record_kill @ship
           record_death i.ship
 
@@ -240,6 +241,10 @@ class RktRobot
 
   def cmd_shield
     @ship.shield = ! @ship.shield
+  end
+
+  def cmd_color color
+    @ship.color = color
   end
 
   alias :cmd_fire :cmd_shoot

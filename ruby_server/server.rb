@@ -29,7 +29,7 @@ class RubyServer
   # constructor
   def initialize
     @server = nil
-    @accepted_versions = [ 0.1 ]
+    @accepted_versions = [ 0.2 ]
   end
 
   # init server
