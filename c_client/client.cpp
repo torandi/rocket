@@ -713,6 +713,10 @@ std::vector<score_t>::iterator find_score(int id) {
 void update_gfx() {
 	gfx_clear();
 	
+	pthread_mutex_lock(&highscore_lock);
+	draw_highscore();
+	pthread_mutex_unlock(&highscore_lock);
+
 	pthread_mutex_lock(&frame_lock);
 	std::vector<ship_t>::iterator it;
 	for(it=ships.begin();it!=ships.end();++it) {
@@ -721,9 +725,6 @@ void update_gfx() {
 	}
 	pthread_mutex_unlock(&frame_lock);
 
-	pthread_mutex_lock(&highscore_lock);
-	draw_highscore();
-	pthread_mutex_unlock(&highscore_lock);
 
 	gfx_update();
 }

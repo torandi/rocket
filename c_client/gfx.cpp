@@ -78,7 +78,7 @@ void resize(int w, int h) {
 
 	glScalef(scale_x, scale_y, 1.f);
 
-	printf("Resized to %dx%d\n", w, h);
+	printf("Resized to %dx%d, scale: %f, %f\n", w, h, scale_x, scale_y);
 }
 
 void init_gfx(int width, int height, float nick_scale, float hs_scale) {
@@ -194,6 +194,8 @@ void gfx_update() {
 void draw_highscore() {
 	if(show_highscore && highscore.size()>0) {
 		glPushMatrix();
+
+		glColor3f(0.7f, 0.7f, 0.7f);
 
 		glTranslatef(5.0f, 2.0f+hs_font_size-4*hs_font_scale, 0.0f);
 
