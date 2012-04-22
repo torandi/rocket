@@ -5,6 +5,7 @@
 #include <FTGL/ftgl.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
+#include <X11/Xlib.h>
 
 #include <string.h>
 #include <math.h>
@@ -29,14 +30,20 @@
 #define HS_FONT_SIZE 16.0f
 
 bool active=false;
-bool show_highscore=true;
+int show_highscore=1;
 int screen_width, screen_height;
+int world_width, world_height;
+float scale_x, scale_y;
+
+float nick_font_size, nick_font_scale;
+float hs_font_size, hs_font_scale;
 
 SDL_Event    event;
 std::string ship_gfx, ship_boost_gfx, font_file;
 bool file_exists(const char * filename);
 GLuint load_texture(const char* file);
 void hndl_event(unsigned char key, int x, int y);
+void resize(int w,int h); 
 
 float radians_to_degrees(double rad);
 void glCircle3i(GLint x, GLint y, GLint radius);
@@ -51,8 +58,7 @@ const float text_matrix[] = 	{ 1.0f,  0.0f, 0.0f, 0.0f,
 void init(int w, int h) {
 	glClearColor(0,0,0,0);
 	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,w,h,0,-1,1);
+	resize(w, h);
 	glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_FLAT);
 
@@ -60,13 +66,31 @@ void init(int w, int h) {
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void init_gfx(int width, int height) {
-	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_SetVideoMode(width,height, 24, SDL_OPENGL | SDL_GL_DOUBLEBUFFER );
-	SDL_WM_SetCaption("Rocket - Robot Sockets","Rocket - Robot Sockets");
+void resize(int w, int h) {
+	glLoadIdentity();
+	glOrtho(0,w,h,0,-1,1);
 
-	screen_width = width;
-	screen_height = height;
+	screen_width = w;
+	screen_height = h;
+
+	scale_x = (float)screen_width/world_width;
+	scale_y = (float)screen_height/world_height;
+
+	glScalef(scale_x, scale_y, 1.f);
+
+	printf("Resized to %dx%d\n", w, h);
+}
+
+void init_gfx(int width, int height, float nick_scale, float hs_scale) {
+	XInitThreads();
+
+	world_width = width;
+	world_height = height;
+
+
+	SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_SetVideoMode(width,height, 24, SDL_OPENGL | SDL_GL_DOUBLEBUFFER | SDL_RESIZABLE);
+	SDL_WM_SetCaption("Rocket - Robot Sockets","Rocket - Robot Sockets");
 
 	init(width,height);
 
@@ -82,8 +106,14 @@ void init_gfx(int width, int height) {
 	nick_font = new FTTextureFont(font_file.c_str());
 	hs_font = new FTTextureFont(font_file.c_str());
 
-	nick_font->FaceSize(NICK_FONT_SIZE);
-	hs_font->FaceSize(HS_FONT_SIZE);
+	nick_font_size = NICK_FONT_SIZE*nick_scale;
+	nick_font_scale = nick_scale;
+
+	hs_font_size = HS_FONT_SIZE*hs_scale;
+	hs_font_scale = hs_scale;
+
+	nick_font->FaceSize(nick_font_size);
+	hs_font->FaceSize(hs_font_size);
 
 	ship=load_texture(ship_gfx.c_str());
 	ship_boost=load_texture(ship_boost_gfx.c_str());
@@ -102,7 +132,7 @@ void draw_ship(const ship_t &s) {
 
 	glPushMatrix();
 	glMultMatrixf(text_matrix);
-	glTranslatef(-(2*strlen(s.nick)*NICK_FONT_SIZE)/7,SHIP_SIZE/2.0f,0.0f);
+	glTranslatef(-(2*strlen(s.nick)*nick_font_size)/7,SHIP_SIZE/2.0f,0.0f);
 	nick_font->Render(s.nick);
 	glPopMatrix();
 
@@ -165,7 +195,7 @@ void draw_highscore() {
 	if(show_highscore && highscore.size()>0) {
 		glPushMatrix();
 
-		glTranslatef(5.0f, 2.0f+HS_FONT_SIZE-4, 0.0f);
+		glTranslatef(5.0f, 2.0f+hs_font_size-4*hs_font_scale, 0.0f);
 
 		glMatrixMode(GL_MODELVIEW);
 
@@ -177,11 +207,17 @@ void draw_highscore() {
 
 		char buffer[64];
 
-		for(int i=0;i<std::min((int)highscore.size(),GFX_NUM_HIGHSCORE_ENTRIES);++i) {
+		int num_entries = 0;
+		if(show_highscore == 2) {
+			num_entries = (int)highscore.size();
+		} else {
+			num_entries = std::min((int)highscore.size(),GFX_NUM_HIGHSCORE_ENTRIES);
+		}
+		for(int i=0;i<num_entries;++i) {
 			score_t s=highscore[i];
 			sprintf(buffer,"%i. %s: %.2f",i+1,s.nick,s.score);
 			hs_font->Render(buffer);
-			glTranslatef(0.0f,HS_FONT_SIZE-4,0.0f);
+			glTranslatef(0.0f,hs_font_size-4*hs_font_scale,0.0f);
 		}
 		glMatrixMode(GL_MODELVIEW);
 
@@ -209,6 +245,10 @@ int hndl_sdl_events() {
 		if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_h) {
 			toggle_highscore();	
 		}
+		if(event.type == SDL_VIDEORESIZE) {
+			resize(event.resize.w, event.resize.h);
+		}
+
 	} // while (handling events)
 	return 0;
 }
@@ -221,11 +261,9 @@ void quit_sdl() {
 
 void toggle_highscore() {
 	if(active) {
-		if(!show_highscore) {
-			show_highscore=true;
-		} else {
-			show_highscore=false;
-		}
+		++show_highscore;
+		if(show_highscore > 2)
+			show_highscore = 0;
 	}
 }
 

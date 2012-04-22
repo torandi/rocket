@@ -10,6 +10,7 @@
 	/*
 	1: Server sync, server init info, frame dropping occurances
 	2: Socket ready info, client disconnect info
+	3: Score updates
 	5: Information about gfx attributes
 	6: Info about buffer memory
 	7: Client forward output

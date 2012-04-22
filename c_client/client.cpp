@@ -60,6 +60,9 @@ double last_frame;
 Config config;
 std::vector<score_t> highscore;
 
+float nick_scale = 1.f;
+float highscore_scale = 1.f;
+
 int main(int argc,char *argv[])
 {
 	printf("RoBot Sockets v. %s\n",CLIENT_VERSION);
@@ -76,6 +79,8 @@ int main(int argc,char *argv[])
 		server_hostname=config["server_hostname"];
 		server_port=atoi(config["server_port"].c_str());
 		local_port=atoi(config["local_port"].c_str());
+		nick_scale = atof(config["nick_scale"].c_str());
+		highscore_scale = atof(config["highscore_scale"].c_str());
 	} catch (std::exception &e) {
 		printf("Failed to read all data from config\n");
 	}
@@ -105,8 +110,29 @@ int main(int argc,char *argv[])
 				fprintf(stderr,"Missing parameter to argument %s\n",argv[i]);
 			}
 		}
+		if(strcmp(argv[i],"-hs")==0 || strcmp(argv[i],"--highscore-scale")==0) {
+			if(argc>i+1) {
+				highscore_scale=atof(argv[i+1]);
+			} else {
+				fprintf(stderr,"Missing parameter to argument %s\n",argv[i]);
+			}
+		}
+		if(strcmp(argv[i],"-ns")==0 || strcmp(argv[i],"--nick-scale")==0) {
+			if(argc>i+1) {
+				nick_scale=atof(argv[i+1]);
+			} else {
+				fprintf(stderr,"Missing parameter to argument %s\n",argv[i]);
+			}
+		}
 		if(strcmp(argv[i],"-h")==0 || strcmp(argv[i],"--help")==0) {
-			printf("Arguments:\n\t-nox: Turn off graphics\n\t -s, --server <server>  : Set server\n\t-sp,--server-port <port> : Set server port\n\t-lp,--local-port : Set which port to listen to\n\t-h,--help : Show this help text\n");
+			printf("Arguments:\n"
+					"\t-nox: Turn off graphics\n"
+					"\t -s, --server <server>  : Set server\n"
+					"\t-sp,--server-port <port> : Set server portn"
+					"\t-lp,--local-port : Set which port to listen to\n"
+					"\t-ns,--nick-scale : Scale nick font (float, default is 1)\n"
+					"\t-hs,--highscore-scale : Scale highscore font (float, default is 1)\n"
+					"\t-h,--help : Show this help text\n");
 			exit(0);
 		}
 	}
@@ -437,9 +463,15 @@ void read_server(struct thread_data *td) {
 					}
 				}
 			} else if (CMP_BUFFER(PROT_SCORE)) {
+#if VERBOSE >= 3
+				printf("Got highscore update\n");
+#endif
 				score_t score;
 				int n=sscanf(buffer,PROT_SCORE_DATA,&score.id,score.nick,&score.score);
 				if(n==PROT_SCORE_DATA_ARGS) {
+#if VERBOSE >= 3
+					printf("Score: %d: %s => %d\n", score.id, score.nick, score.score);
+#endif
 					std::vector<score_t>::iterator s_it=find_score(score.id);
 					pthread_mutex_lock(&highscore_lock);
 					if(s_it!=highscore.end()) {
@@ -523,8 +555,9 @@ void * read_client(void * data) {
 		next_newline = strchr(buffer,'\n');
 		if(next_newline == NULL) {
 			n+=read_data(td->csock,(void*)next_read,BUFFER_SIZE-n);
+#if VERBOSE >= 5
 			printf("Read: %s\n",next_read);
-			
+#endif
 			if(n<=0) {
 				run=false;
 				break;
@@ -724,7 +757,7 @@ void check_bounds(ship_t &ship) {
  * Also handles the interpolation
  */
 void * gfx_hndl(void * data) {
-	init_gfx(screen_width,screen_height);
+	init_gfx(screen_width,screen_height, nick_scale, highscore_scale);
 	while(1) {
 		pthread_mutex_lock(&gfx_draw_lock);
 		update_gfx();

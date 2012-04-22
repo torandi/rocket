@@ -148,12 +148,12 @@ int read_sck_line(const socket_data * sock,char * data) {
 		} else {
 		#if VERBOSE >=2
 				fprintf(stderr,"Incorrect hash for frame. Payload: %s. Data:\n",payload);
-			#endif
-			#if VERBOSE >= 11
+		#endif
+		#if VERBOSE >= 11
 				for(int i=0;i<FRAME_SIZE;++i) {
 					printf("%i, ",buffer[i]);
 				}
-			#endif
+		#endif
 			data[0]=0;
 			return 0;
 		}
