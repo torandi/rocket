@@ -141,7 +141,7 @@ void draw_ship(const ship_t &s) {
 	glColor3f(1,1,1);
 
 	glPushMatrix();
-	glTranslatef(s.x,s.y,0.0f);
+	glTranslatef(s._x,s._y,0.0f);
 
 	float rot = radians_to_degrees(s.a)*-1.0f;
 
