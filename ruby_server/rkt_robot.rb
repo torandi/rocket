@@ -132,15 +132,24 @@ class RktRobot
       puts "#{enemy_rad} #{@ship.angle}" if $verbose > 2
 
       if v1_rad > @ship.angle and @ship.angle > v2_rad
-        puts "ship #{i.ship.name} is dead"
-        i.ship.dead = true
-        record_kill @ship
-        record_death i.ship
-        begin
-          Protocol.write i.client, "dead"
-        rescue Errno::EPIPE
-          # Connection is dead, remove robot
-          $items.delete i  
+        # This is a hit
+
+        # Have the ship the shield enabled?
+        if @ship.shield and @ship.energy? 25
+          @ship.consume 25
+          cmd_energy
+        else
+          puts "ship #{i.ship.name} is dead"
+          i.ship.dead = true
+          record_kill @ship
+          record_death i.ship
+
+          begin
+            Protocol.write i.client, "dead"
+          rescue Errno::EPIPE
+            # Connection is dead, remove robot
+            $items.delete i
+          end
         end
       end
     end
@@ -227,6 +236,10 @@ class RktRobot
 	
   def cmd_energy
     Protocol.write @c, "energy #{@ship.energy}"
+  end
+
+  def cmd_shield
+    @ship.shield = ! @ship.shield
   end
 
   alias :cmd_fire :cmd_shoot

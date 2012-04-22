@@ -17,6 +17,7 @@ class RocketShip < RocketItem
     @scan = false
     @scan_ticker = 0
     @energy = 100;
+    @shield = false;
   end
 
   def action
@@ -24,6 +25,7 @@ class RocketShip < RocketItem
     r.push "boost" if boost?
     r.push "shoot" if @shoot
     r.push "scan" if @scan
+    r.push "shield" if @shield
     r.join ","
   end
   
@@ -51,6 +53,7 @@ class RocketShip < RocketItem
     @angle = @angle % 2*Math::PI if @angle > 2*Math::PI
 
     @energy = @energy + 1 if @energy < 100
+    @energy = @energy - 1 if @shield
 
     if @shoot_ticker > 5
       @shoot = false
@@ -118,5 +121,5 @@ class RocketShip < RocketItem
     false
   end
 
-  attr_accessor :item, :x, :y, :name, :shoot, :angle, :dead, :scan, :speed_mod, :energy
+  attr_accessor :item, :x, :y, :name, :shoot, :angle, :dead, :scan, :speed_mod, :energy, :shield
 end
