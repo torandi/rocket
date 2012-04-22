@@ -427,6 +427,7 @@ void read_server(struct thread_data *td) {
 					int red, green, blue;	
 
 					int power = 0;
+					printf("Buffer: %s\n", buffer);
 					int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,&power, &red, &green, &blue, attr_str);
 					ship.power = power/100.f;
 					ship.r = red/255.f;
@@ -434,6 +435,7 @@ void read_server(struct thread_data *td) {
 					ship.b = blue/255.f;
 
 					if((ship.r + ship.b + ship.g) <= 0.3f ) {
+						printf("Ship to dark, lighting up\n");
 						ship.r = 0.1;
 						ship.g = 0.1;
 						ship.b = 0.1;
@@ -471,7 +473,8 @@ void read_server(struct thread_data *td) {
 #endif
 								}
 							}
-						}
+						} 
+
 						frame.push_back(ship);
 						free(attr_org);
 					} else {

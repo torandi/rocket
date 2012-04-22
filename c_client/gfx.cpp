@@ -216,11 +216,19 @@ void draw_ship(const ship_t &s) {
 	glTranslatef(-SHIP_SIZE/2.0f,-SHIP_SIZE/2.0f,0.0);
 
 	if(s.attr[GFX_ATTR_BOOST]) {
+		glColor3f(1.f, 1.f, 1.f);
 		glBindTexture(GL_TEXTURE_2D,ship_boost);
-	} else {
-		glBindTexture(GL_TEXTURE_2D,ship);
+		glBegin(GL_QUADS);
+			glTexCoord2f(0.0f,0.0f); glVertex3f(0.0f,0.0f,0.0f);
+			glTexCoord2f(0.0f,1.0f); glVertex3f(0.0f,SHIP_SIZE,0.0f);
+			glTexCoord2f(1.0f,1.0f); glVertex3f(SHIP_SIZE, SHIP_SIZE,0.0f);
+			glTexCoord2f(1.0f,0.0f); glVertex3f(SHIP_SIZE,0.0f,0.0f);
+		glEnd();
+		glColor3f(s.r, s.g, s.b);
 	}
 
+
+	glBindTexture(GL_TEXTURE_2D,ship);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0.0f,0.0f); glVertex3f(0.0f,0.0f,0.0f);
 		glTexCoord2f(0.0f,1.0f); glVertex3f(0.0f,SHIP_SIZE,0.0f);
