@@ -482,9 +482,6 @@ void read_server(struct thread_data *td) {
 					}
 				}
 			} else if (CMP_BUFFER(PROT_SCORE)) {
-#if VERBOSE >= 3
-				printf("Got highscore update\n");
-#endif
 				score_t score;
 				int n=sscanf(buffer,PROT_SCORE_DATA,&score.id,score.nick,&score.score);
 				if(n==PROT_SCORE_DATA_ARGS) {
