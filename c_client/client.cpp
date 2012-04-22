@@ -434,7 +434,6 @@ void read_server(struct thread_data *td) {
 					ship.b = blue/255.f;
 
 					if((ship.r + ship.b + ship.g) <= 0.3f ) {
-						printf("Ship to dark, lighting up\n");
 						ship.r = 0.1;
 						ship.g = 0.1;
 						ship.b = 0.1;
