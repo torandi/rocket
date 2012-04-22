@@ -156,7 +156,7 @@ void draw_ship(const ship_t &s) {
 
 	glPushMatrix();
 	glMultMatrixf(text_matrix);
-	glTranslatef(-(2*strlen(s.nick)*nick_font_size)/7,SHIP_SIZE/2.0f,0.0f);
+	glTranslatef(-(2*strlen(s.nick)*nick_font_size)/7,SHIELD_SIZE/2.5f,0.0f);
 	nick_font->Render(s.nick);
 	glPopMatrix();
 
