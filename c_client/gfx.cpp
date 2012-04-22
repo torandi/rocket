@@ -68,7 +68,7 @@ void init(int w, int h) {
 
 void resize(int w, int h) {
 	glLoadIdentity();
-	glOrtho(0,w,h,0,-1,1);
+	glOrtho(0,world_width,world_height,0,-1,1);
 
 	screen_width = w;
 	screen_height = h;
