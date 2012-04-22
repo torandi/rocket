@@ -18,7 +18,7 @@
 	10: Socket input/output
 	11: Encryption debug
 	 */
-	#define VERBOSE 2
+	#define VERBOSE 3
 
 
 	#define CLIENT_VERSION "0.2 BETA"

@@ -489,7 +489,7 @@ void read_server(struct thread_data *td) {
 				int n=sscanf(buffer,PROT_SCORE_DATA,&score.id,score.nick,&score.score);
 				if(n==PROT_SCORE_DATA_ARGS) {
 #if VERBOSE >= 3
-					printf("Score: %d: %s => %d\n", score.id, score.nick, score.score);
+					printf("Score: %d: %s => %f\n", score.id, score.nick, score.score);
 #endif
 					std::vector<score_t>::iterator s_it=find_score(score.id);
 					pthread_mutex_lock(&highscore_lock);
