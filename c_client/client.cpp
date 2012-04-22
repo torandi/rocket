@@ -427,7 +427,6 @@ void read_server(struct thread_data *td) {
 					int red, green, blue;	
 
 					int power = 0;
-					printf("Buffer: %s\n", buffer);
 					int n=sscanf(buffer,PROT_GFX_SHIP_DATA,ship.nick,&ship.x,&ship.y,&ship.a,&ship.s,&power, &red, &green, &blue, attr_str);
 					ship.power = power/100.f;
 					ship.r = red/255.f;
