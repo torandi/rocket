@@ -19,6 +19,12 @@ while true
   s.puts "angle #{a}"
   s.puts "boost" if rand(1) == 0
   s.puts "shoot" if rand(2) == 0
+  s.puts "shield" if rand(4) == 0
+  color = sprintf("%02X", rand(255))
+  color = color + sprintf("%02X", rand(255))
+  color = color + sprintf("%02X", rand(255))
+  s.puts "color #{color}"
+  puts "set color to #{color}"
   sleep 1
 end
 
