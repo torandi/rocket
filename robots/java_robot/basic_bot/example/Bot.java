@@ -17,6 +17,11 @@ public class Bot implements ClientInterface{
     public Bot() {
         System.out.println("ID: "+id);
         si=new ServerInterface(server,port,this);
+		  si.color("e2007f");
+		  while(true) {
+				si.scan();
+				try { Thread.sleep(800); } catch (Exception e) {};
+		  }
     }
 
     public void connected() {
@@ -37,7 +42,12 @@ public class Bot implements ClientInterface{
     }
 
     public void scanResult(RelativePostion rp) {
-
+		if(rp.angle != 0) {
+			 si.rotate(rp.angle);
+		} else {
+			if(rp.dist < 120)
+				si.fire();
+		}
     }
 
     public void error(Exception e) {

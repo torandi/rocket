@@ -16,7 +16,7 @@ public class ServerInterface implements XStreamParent {
 	 **/
 
 	public void fire() {
-		 sck.writeln("f");
+		 sck.writeln("fire");
 	}
 
 	public void stop() {
@@ -30,18 +30,26 @@ public class ServerInterface implements XStreamParent {
 		 }
 	}
 
+	public void shield() {
+		sck.writeln("shield");
+	}
+
 	public void boost() {
-		 sck.writeln("b");
+		 sck.writeln("boost");
 	}
 
 	public void scan() {
 		 scan=true;
-		 sck.writeln("s");
+		 sck.writeln("scan");
+	}
+
+	public void color(String color) {
+		sck.writeln("color "+color);
 	}
 
 	public void rotate(double angle) {
 		 int grad=(int)Math.toDegrees(angle);
-		 sck.writeln("a "+grad);
+		 sck.writeln("angle "+grad);
 	}
 
 	/**
@@ -75,7 +83,7 @@ public class ServerInterface implements XStreamParent {
             sck.setParent(this);
             sck.initXStreamReciver();
             //Send client name
-            sck.writeln(ci.clientName());
+            sck.writeln("name "+ci.clientName());
         }
     }
 
@@ -88,20 +96,21 @@ public class ServerInterface implements XStreamParent {
                 return;
             }
             if(ready) {
-                if(data.trim().equals("dead")) {
-                    sck.close();
-                    ci.dead();
-                } else {
+					 String cmd[] = data.trim().split(" ");
+                if(cmd[0].equals("dead")) {
+						 ci.dead();
+                } else if(cmd[0].equals("scan")) {
                     //Scanning resultat
-                    if(data.trim().equals("0")) {
+                    if(cmd[1].equals("0") && cmd[1].equals("0")) {
                        ci.noScanResult();
                     } else {
-                       String[] split = data.split(" ");
-                       if(split.length>1) {
-                         ci.scanResult(new RelativePostion(Integer.parseInt(split[0].trim()),Integer.parseInt(split[1].trim())));
+                       if(cmd.length>2) {
+                         ci.scanResult(new RelativePostion(Integer.parseInt(cmd[1]),Integer.parseInt(cmd[2])));
                        }
                     }
-                }
+                } else {
+							System.out.println("Unknown cmd recived: "+data.trim());
+					 }
             }
         } catch (Exception e) {
             ci.error(e);
