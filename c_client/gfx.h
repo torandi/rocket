@@ -18,7 +18,7 @@
 
 	#define GFX_NUM_HIGHSCORE_ENTRIES 5
 
-	void init_gfx(int width,int height, float nick_scale, float hs_scale); 
+	void init_gfx(int width,int height, bool fullscreen, float nick_scale, float hs_scale); 
 	int hndl_sdl_events();
 	void quit_sdl();
 	void draw_ship(const ship_t &ship);

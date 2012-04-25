@@ -88,7 +88,7 @@ void resize(int w, int h) {
 	printf("Resized to %dx%d, scale: %f, %f\n", w, h, scale_x, scale_y);
 }
 
-void init_gfx(int width, int height, float nick_scale, float hs_scale) {
+void init_gfx(int width, int height, bool fullscreen, float nick_scale, float hs_scale) {
 	XInitThreads();
 
 	world_width = width;
@@ -96,7 +96,13 @@ void init_gfx(int width, int height, float nick_scale, float hs_scale) {
 
 
 	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_SetVideoMode(width,height, 24, SDL_OPENGL | SDL_GL_DOUBLEBUFFER | SDL_RESIZABLE);
+	int flags = 0;
+	if(fullscreen) 
+		flags = SDL_FULLSCREEN;
+	else 
+		flags = SDL_RESIZABLE;
+
+	SDL_SetVideoMode(width,height, 24, SDL_OPENGL | SDL_GL_DOUBLEBUFFER );
 	SDL_WM_SetCaption("Rocket - Robot Sockets","Rocket - Robot Sockets");
 
 	init(width,height);
@@ -130,6 +136,8 @@ void init_gfx(int width, int height, float nick_scale, float hs_scale) {
 	ship_boost=load_texture(ship_boost_gfx.c_str());
 	ship_explode=load_texture(ship_explode_gfx.c_str());
 	shield=load_texture(shield_gfx.c_str());
+
+	SDL_SetVideoMode(width,height, 24, SDL_OPENGL | SDL_GL_DOUBLEBUFFER | flags);
 
 	glBindTexture(GL_TEXTURE_2D,0);
 	active = true;

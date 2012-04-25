@@ -30,6 +30,7 @@
 #define BUFFER_SIZE 1024
 
 bool nox=false;
+bool fullscreen = false;
 
 socket_data * init_server_connection(struct thread_data * data);
 void * init_server_communication(void * data);
@@ -89,6 +90,9 @@ int main(int argc,char *argv[])
 		if(strcmp(argv[i],"-nox")==0)  {
 			nox=true;
 		}
+		if(strcmp(argv[i],"-f")==0)  {
+			fullscreen = true;
+		}
 		if(strcmp(argv[i],"-s")==0 || strcmp(argv[i],"--server")==0) {
 			if(argc>i+1) {
 				server_hostname=std::string(argv[i+1]);
@@ -127,6 +131,7 @@ int main(int argc,char *argv[])
 		if(strcmp(argv[i],"-h")==0 || strcmp(argv[i],"--help")==0) {
 			printf("Arguments:\n"
 					"\t-nox: Turn off graphics\n"
+					"\t-f: fullscreen\n"
 					"\t -s, --server <server>  : Set server\n"
 					"\t-sp,--server-port <port> : Set server portn"
 					"\t-lp,--local-port : Set which port to listen to\n"
@@ -774,7 +779,7 @@ void check_bounds(ship_t &ship) {
  * Also handles the interpolation
  */
 void * gfx_hndl(void * data) {
-	init_gfx(screen_width,screen_height, nick_scale, highscore_scale);
+	init_gfx(screen_width, screen_height, fullscreen, nick_scale, highscore_scale);
 	while(1) {
 		pthread_mutex_lock(&gfx_draw_lock);
 		update_gfx();
