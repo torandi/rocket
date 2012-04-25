@@ -243,6 +243,14 @@ class RktRobot
     @ship.shield = ! @ship.shield
   end
 
+  def cmd_shieldoff
+    @ship.shield = false
+  end
+
+  def cmd_shieldon
+    @ship.shield = true
+  end
+
   def cmd_color color
     @ship.color = color
   end
