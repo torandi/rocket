@@ -1,0 +1,11 @@
+Skelett för Robot Sockets.
+
+Bygga:
+kör ant
+(eller bara bygga hela example-mappen med valfritt ide)
+
+
+Köra:
+Mainklass: Main
+Från konsol: 
+java -cp rocket.jar Main

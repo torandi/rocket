@@ -17,7 +17,7 @@ public class Bot implements ClientInterface{
     public Bot() {
         System.out.println("ID: "+id);
         si=new ServerInterface(server,port,this);
-		  si.color("e2007f");
+		  si.color("e2007f"); //Send color
 		  while(true) {
 				si.scan();
 				try { Thread.sleep(800); } catch (Exception e) {};
@@ -29,7 +29,7 @@ public class Bot implements ClientInterface{
     }
 
     public String clientName() {
-        return "BOTNAME"+id;
+        return "BOTNAME"+id; //Set name
     }
 
     public void ready() {
