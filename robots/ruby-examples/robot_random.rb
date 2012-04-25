@@ -4,8 +4,8 @@
 require 'socket'
 
 # You need to connect to the display
-hostname = 'localhost'
-port = 4710
+hostname = '130.229.166.161'
+port = 42125
 
 # Open connection
 s = TCPSocket.open(hostname, port)
