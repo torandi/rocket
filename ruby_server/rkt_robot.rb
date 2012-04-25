@@ -135,8 +135,8 @@ class RktRobot
         # This is a hit
 
         # Have the ship the shield enabled?
-        if @ship.shield and @ship.energy? 25
-          @ship.consume 25
+        if @ship.shield and @ship.energy? 40
+          @ship.consume 40
           cmd_energy
         else
           puts "ship #{i.ship.name} is dead"
@@ -157,8 +157,8 @@ class RktRobot
   end
   
   def cmd_boost
-    return if not @ship.energy? 50
-    @ship.consume 50
+    return if not @ship.energy? 20
+    @ship.consume 20
     @ship.boost true
   end
   
