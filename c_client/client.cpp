@@ -626,15 +626,15 @@ void * read_client(void * data) {
 		}
 	}
 
-#if VERBOSE >=1 
-	printf("Disconnected from client (socket: %i)\n",td->csock->socket);
-#endif
 	if(td->ssock!=0) {
 		writeln(td->ssock,PROT_CLOSE,sizeof(PROT_CLOSE));
 		close_socket(&td->ssock);
 	}
 	if(td->csock!=0) {	
 		close_socket(&td->csock);
+		#if VERBOSE >=1 
+			printf("Disconnected from client (socket: %i)\n",td->csock->socket);
+		#endif
 	}
 	free(buffer);
 	return 0;
